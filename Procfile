@@ -1,0 +1,1 @@
+web: python coap_server.py
