@@ -137,7 +137,7 @@ async def main():
     root.add_resource(['discovery'], Discovery())
     root.add_resource(['whoami'], WhoAmI())
 
-    await aiocoap.Context.create_server_context(root, bind = ('192.168.1.103',56686))
+    await aiocoap.Context.create_server_context(root)
     print("Setup complete\n")
     # Run forever
     await asyncio.get_running_loop().create_future()
