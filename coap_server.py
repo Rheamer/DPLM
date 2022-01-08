@@ -5,8 +5,10 @@ import asyncio
 
 import aiocoap.resource as resource
 import aiocoap
+from os import environ
 
 discovered_devs = set()
+port = 0
 
 class BlockResource(resource.Resource):
     """Example resource which supports the GET and PUT methods. It sends large
@@ -137,10 +139,11 @@ async def main():
     root.add_resource(['discovery'], Discovery())
     root.add_resource(['whoami'], WhoAmI())
 
-    await aiocoap.Context.create_server_context(root)
+    await aiocoap.Context.create_server_context(root, bind = ('0.0.0.0', port))
     print("Setup complete\n")
     # Run forever
     await asyncio.get_running_loop().create_future()
 
 if __name__ == "__main__":
+    port = environ.get('PORT', 5000)
     asyncio.run(main())
