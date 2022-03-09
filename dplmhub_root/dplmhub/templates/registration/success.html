@@ -1,0 +1,9 @@
+{% extends "index.html" %}
+{% block title%} Regustration Success {% endblock title %}
+{% block sidenav %}
+    <li><a href="/">HOME</a></li>
+{% endblock sidenav %}
+{% block content %}
+<h1> REGISTRATION SUCCESS </h1>
+<p> <a href="{% url 'login' %}?next=/"> LOGIN </a> </p>
+{% endblock content %}
