@@ -8,7 +8,8 @@ from typing import Protocol
 import requests as r
 import os
 session_file = 'session'
-
+  
+  
 def print_help():
     print('Commands examples:')
     print('getdev - get device list')
