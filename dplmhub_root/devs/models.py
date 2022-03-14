@@ -46,3 +46,4 @@ class Device(models.Model):
 class Topic(models.Model):
     user = models.ForeignKey(DeviceMaster, on_delete=models.CASCADE)
     name = models.CharField(max_length=100, default='')
+

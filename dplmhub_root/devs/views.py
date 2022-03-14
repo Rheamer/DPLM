@@ -1,6 +1,7 @@
 import asyncio
 from cgi import print_directory
-from rest_framework import generics
+from rest_framework import generics, viewsets, exceptions
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
@@ -47,40 +48,38 @@ class DeviceNetApiView(generics.GenericAPIView):
         return Response(status=status.HTTP_400_NOT_FOUND)
 
 
-class DeviceActionView(generics.GenericAPIView):
+class DeviceActionView(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DeviceSerializer
+    serializer_class = DeviceActionSerializer
     # TODO: make serializers to format control requests
     # TODO: maybe it's better to use GenericViewSet with
+    # TODO: DRY the validation with wrapper
 
-    def get(self, request: Request, *args, **kwargs):
-        dev_endpoint = request.headers['endpoint']
-        clientID = request.headers['clientID']
-        print('Read ' + clientID)
-        devices = Device.objects.filter(clientID=clientID)
-        # should only one device found
-        if devices.count() > 1:
-            print('Found repeating clientID query!')
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def ActionValidationWrapper(func):
+        pass
+
+    @action(["get"], detail=True)
+    def read(self, request: Request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        devices = Device.objects /
+            .filter(clientID=serializer.clientID)
         if devices.count() == 0:
-            return Response(data="No device with provided ID",
-                            status=status.HTTP_404_NOT_FOUND)
-        MqttServer.getInstance().dev_read(dev_endpoint, clientID)
+                raise exceptions.NotFound(detail="No device with provided ID")
+        MqttServer.getInstance() /
+            .dev_read(
+                serializer.endpoint, 
+                serializer.clientID)
         return Response(status=status.HTTP_200_OK)
 
     def post(self, request: Request, *args, **kwargs):
-        dev_endpoint = request.headers['endpoint']
-        clientID = request.headers['clientID']
-        payload = request.headers['payload']
-        print('Put ' + clientID)
-        devices = Device.objects.filter(clientID=clientID)
-        # should only be one device found
-        if devices.count() > 1:
-            print('Found repeating clientID query!')
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        devices = Device.objects /
+            .filter(clientID=serializer.clientID)
         if devices.count() == 0:
-            return Response(data="No device with provided ID",
-                            status=status.HTTP_404_NOT_FOUND)
+            raise exceptions.NotFound(
+                detail="No device with provided ID")
         MqttServer.getInstance().dev_put(dev_endpoint, clientID, payload)
         return Response(status=status.HTTP_200_OK)
 
