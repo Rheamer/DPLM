@@ -15,7 +15,7 @@ from asgiref.sync import sync_to_async
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
 from decouple import config
-
+import functools
 
 class DeviceListApiView(generics.ListCreateAPIView):
     # add permission to check if user is authenticated
@@ -47,57 +47,62 @@ class DeviceNetApiView(generics.GenericAPIView):
             return Response(status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_NOT_FOUND)
 
+# TODO: what's better?
 
-class DeviceActionView(viewsets.GenericViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DeviceActionSerializer
-    # TODO: make serializers to format control requests
-    # TODO: maybe it's better to use GenericViewSet with
-    # TODO: DRY the validation with wrapper
+# def action_validation_wrapper(serializer_class):
+#     def func_wrap(action_func):
+#         @functools.wraps(action_func)
+#         def wrapper(request: Request):
+#             serializer = serializer_class(data=request.data)
+#             serializer.is_valid(raise_exception=True)
+#             devices = Device.objects\
+#                 .filter(clientID=serializer.clientID)
+#             if devices.count() == 0:
+#                 raise exceptions.NotFound(
+#                     detail="No device with provided ID")
+#             action_func(endpoint=serializer.endpoint,
+#                         deviceID=serializer.clientID,
+#                         payload=serializer.payload)
+#             return Response(status=status.HTTP_200_OK)
+#         return wrapper
+#     return func_wrap
 
-    def ActionValidationWrapper(func):
-        pass
 
-    @action(["get"], detail=True)
-    def read(self, request: Request, *args, **kwargs):
+def action_validation_wrapper(action_func):
+    @functools.wraps(action_func)
+    def wrapper(self, request: Request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        devices = Device.objects /
-            .filter(clientID=serializer.clientID)
-        if devices.count() == 0:
-                raise exceptions.NotFound(detail="No device with provided ID")
-        MqttServer.getInstance() /
-            .dev_read(
-                serializer.endpoint, 
-                serializer.clientID)
-        return Response(status=status.HTTP_200_OK)
-
-    def post(self, request: Request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        devices = Device.objects /
+        devices = Device.objects\
             .filter(clientID=serializer.clientID)
         if devices.count() == 0:
             raise exceptions.NotFound(
                 detail="No device with provided ID")
-        MqttServer.getInstance().dev_put(dev_endpoint, clientID, payload)
+        action_func(endpoint=serializer.endpoint,
+                    deviceID=serializer.clientID,
+                    payload=serializer.payload)
         return Response(status=status.HTTP_200_OK)
+    return wrapper
 
-    def update(self, request: Request, *args, **kwargs):
-        dev_endpoint = request.headers['endpoint']
-        clientID = request.headers['clientID']
-        payload = request.headers['payload']
-        print('Update ' + clientID)
-        devices = Device.objects.filter(clientID=clientID)
-        # should only be one device found
-        if devices.count() > 1:
-            print('Found repeating clientID query!')
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        if devices.count() == 0:
-            return Response(data="No device with provided ID",
-                            status=status.HTTP_404_NOT_FOUND)
-        MqttServer.getInstance().dev_update(dev_endpoint, clientID, payload)
-        return Response(status=status.HTTP_200_OK)
+
+class DeviceActionView(viewsets.GenericViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DeviceActionSerializer
+
+    @action(["get"], detail=True)
+    @action_validation_wrapper
+    def dev_read(endpoint, clientID):
+        MqttServer.getInstance().dev_read(endpoint, clientID)
+
+    @action(["post"], detail=True)
+    @action_validation_wrapper
+    def dev_put(self, endpoint, clientID, payload):
+        MqttServer.getInstance().dev_put(endpoint, clientID, payload)
+
+    @action(["put"], detail=True)
+    @action_validation_wrapper
+    def dev_update(self, endpoint, clientID, payload):
+        MqttServer.getInstance().dev_update(endpoint, clientID, payload)
 
 
 class GridListView(generics.ListCreateAPIView):

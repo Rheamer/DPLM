@@ -172,10 +172,10 @@ class MqttServer():
     def callbackAvailable(self, endpoint, deviceID):
         return f'action/read/{endpoint}/{deviceID}' in self._callbacks
 
-    def dev_update(self, endpoint, deviceID, payload = ""):
+    def dev_update(self, endpoint, deviceID, payload=""):
         self._client.publish(f'action/update/{endpoint}/{deviceID}', payload)
     
-    def dev_put(self, endpoint, deviceID, payload = ""):
+    def dev_put(self, endpoint, deviceID, payload=""):
         self._client.publish(f'action/put/{endpoint}/{deviceID}', payload)
     
     def dev_read(self, endpoint, deviceID):

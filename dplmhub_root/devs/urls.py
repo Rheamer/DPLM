@@ -8,13 +8,13 @@ from rest_framework.routers import DefaultRouter
 mqtt = MqttServer.getInstance()
 
 router = DefaultRouter()
-router.register("action", views.DeviceActionView)
+router.register("", views.DeviceActionView, basename='action')
 
 urlpatterns = router.urls + [
-    path('devices', views.DeviceListApiView.as_view(), name='devices'),
+    path('list', views.DeviceListApiView.as_view(), name='devices'),
     # TODO: implement: identify in url by id
     # path('devices/<int:id>', DeviceListApiView.as_view(), name='devices'),
-    path('devices/network', views.DeviceNetApiView.as_view(), name='network'),
+    path('network', views.DeviceNetApiView.as_view(), name='network'),
     # path('devices/action', DeviceActionView.as_view(), name='action'),
     path('grids', views.GridListView.as_view(), name='grids')
     # path('devices/create', DeviceConfigUpdateView.as_view(), name = 'creation')

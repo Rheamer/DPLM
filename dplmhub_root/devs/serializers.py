@@ -22,7 +22,7 @@ class NetworkSwitchSerializer(serializers.Serializer):
 
 class DeviceActionSerializer(serializers.Serializer):
     endpoint = serializers.CharField(max_length=30)
-    cliendID = serializers.CharField(max_length=50)
-    payload = serializers.CharField(blank=True)
+    clientID = serializers.CharField(max_length=50)
+    payload = serializers.CharField(allow_null=True)
 
 

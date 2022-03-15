@@ -81,7 +81,7 @@ class TestGridAPI(APITestCase):
     def test_get_grid(self):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
         request = self.factory.get(reverse('grids'))
-        object = models.Grid.object.create(user=user)
+        models.Grid.object.create(user=user)
         force_authenticate(request, user=user)
         resp = self.view_list.as_view()(request)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
