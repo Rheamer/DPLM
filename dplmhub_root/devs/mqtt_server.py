@@ -144,8 +144,7 @@ class MqttServer():
             print("Trying to connect to: " + mqtt_server_adress)
             self._client.connect(mqtt_server_adress, broker_port_unsafe, 60)
             self._client.loop()
-        while True:
-            self._client.loop()
+        self._client.loop_start()
 
     def set_network(self, old_ssid: str, old_address: str, ssid: str, password: str):
         """ 
