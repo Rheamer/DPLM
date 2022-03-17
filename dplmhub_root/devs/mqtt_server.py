@@ -144,8 +144,7 @@ class MqttServer():
             print("Trying to connect to: " + mqtt_server_adress)
             self._client.connect(mqtt_server_adress, broker_port_unsafe, 60)
             self._client.loop()
-        while True:
-            self._client.loop()
+        self._client.loop_start()
 
     def set_network(self, old_ssid: str, old_address: str, ssid: str, password: str):
         """ 
@@ -172,17 +171,20 @@ class MqttServer():
     def callbackAvailable(self, endpoint, deviceID):
         return f'action/read/{endpoint}/{deviceID}' in self._callbacks
 
-    def dev_update(self, endpoint, deviceID, payload = ""):
+    def dev_update(self, endpoint, deviceID, payload=""):
         self._client.publish(f'action/update/{endpoint}/{deviceID}', payload)
     
-    def dev_put(self, endpoint, deviceID, payload = ""):
+    def dev_put(self, endpoint, deviceID, payload=""):
         self._client.publish(f'action/put/{endpoint}/{deviceID}', payload)
     
     def dev_read(self, endpoint, deviceID):
-        """ Singular read """
+        """
+        Publish request to get a singular response with a value
+        """
         self._client.message_callback_add(f'action/read/{endpoint}/{deviceID}',
             lambda client, userd, msg: print(msg))
         self._client.publish(f'action/update/{endpoint}/{deviceID}')
+        # TODO: switch to confirmation
         def closeCallback():
             time.sleep(1)
             self._client.message_callback_remove(f'action/update/{endpoint}/{deviceID}')

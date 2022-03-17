@@ -19,3 +19,10 @@ class NetworkSwitchSerializer(serializers.Serializer):
     wifi_ssid = serializers.CharField(max_length=100)
     wifi_pass = serializers.CharField(max_length=100)
 
+
+class DeviceActionSerializer(serializers.Serializer):
+    endpoint = serializers.CharField(max_length=30)
+    clientID = serializers.CharField(max_length=50)
+    payload = serializers.CharField(allow_null=True)
+
+
