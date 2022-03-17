@@ -74,13 +74,15 @@ def action_validation_wrapper(action_func):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         devices = Device.objects\
-            .filter(clientID=serializer.clientID)
+            .filter(clientID=serializer.data['clientID'])
         if devices.count() == 0:
             raise exceptions.NotFound(
                 detail="No device with provided ID")
-        action_func(endpoint=serializer.endpoint,
-                    deviceID=serializer.clientID,
-                    payload=serializer.payload)
+        action_func(
+            self,
+            endpoint=serializer.data['endpoint'],
+            clientID=serializer.data['clientID'],
+            payload=serializer.data['payload'])
         return Response(status=status.HTTP_200_OK)
     return wrapper
 
@@ -89,17 +91,17 @@ class DeviceActionView(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DeviceActionSerializer
 
-    @action(["get"], detail=True)
+    @action(["get"], detail=False)
     @action_validation_wrapper
     def dev_read(endpoint, clientID):
         MqttServer.getInstance().dev_read(endpoint, clientID)
 
-    @action(["post"], detail=True)
+    @action(["post"], detail=False)
     @action_validation_wrapper
     def dev_put(self, endpoint, clientID, payload):
         MqttServer.getInstance().dev_put(endpoint, clientID, payload)
 
-    @action(["put"], detail=True)
+    @action(["put"], detail=False)
     @action_validation_wrapper
     def dev_update(self, endpoint, clientID, payload):
         MqttServer.getInstance().dev_update(endpoint, clientID, payload)
@@ -110,13 +112,14 @@ class GridListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Grid.objects.all()\
-            .select_related('user') \
-            .select_related('user') \
-            .filter(username=self.request.user)
+        user_query = User.objects\
+            .filter(pk=self.request.user.pk)
+        # length <= 1
+        for user in user_query:
+            devmas_query = user.device_masters.all()
+            for dev in devmas_query:
+                return dev.grids.all()
 
-
-# TODO: get grid devices view with grid ID
 
 class StreamControllerView(generics.GenericAPIView):
     """

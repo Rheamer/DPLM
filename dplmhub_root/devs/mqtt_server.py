@@ -178,10 +178,13 @@ class MqttServer():
         self._client.publish(f'action/put/{endpoint}/{deviceID}', payload)
     
     def dev_read(self, endpoint, deviceID):
-        """ Singular read """
+        """
+        Publish request to get a singular response with a value
+        """
         self._client.message_callback_add(f'action/read/{endpoint}/{deviceID}',
             lambda client, userd, msg: print(msg))
         self._client.publish(f'action/update/{endpoint}/{deviceID}')
+        # TODO: switch to confirmation
         def closeCallback():
             time.sleep(1)
             self._client.message_callback_remove(f'action/update/{endpoint}/{deviceID}')

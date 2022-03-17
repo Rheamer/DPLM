@@ -10,7 +10,8 @@ mqtt = MqttServer.getInstance()
 router = DefaultRouter()
 router.register("", views.DeviceActionView, basename='action')
 
-urlpatterns = router.urls + [
+urlpatterns = [
+    path('', include(router.urls)),
     path('list', views.DeviceListApiView.as_view(), name='devices'),
     # TODO: implement: identify in url by id
     # path('devices/<int:id>', DeviceListApiView.as_view(), name='devices'),
@@ -22,4 +23,4 @@ urlpatterns = router.urls + [
 
 
 # TODO: implement as process, not thread
-# threading.Thread(target=mqtt.run_mqtt_server).start()
+threading.Thread(target=mqtt.run_mqtt_server).start()

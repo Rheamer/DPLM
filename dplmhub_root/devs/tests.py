@@ -32,31 +32,26 @@ class TestDeviceView(APITestCase):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
         master = userModels.DeviceMaster.objects.create(user=user)
         data = {'user': master.id,
-                'clientID': 'client'
+                'clientID': 'test_client'
                 }
         serializer = serials.DeviceSerializer(data=data)
-        serializer.is_valid()
-        # print(f'Serializer is valid? - {serializer.is_valid()}')
-        # print(serializer.data)
+        serializer.is_valid(raise_exception=True)
         request = self.factory.post(reverse('devices'),
-                                    data=serializer.data)
+                                    data=data)
         force_authenticate(request, user=user)
         resp = self.view_list.as_view()(request)
-        # print(f'Status - {resp.status_code} {resp.data}')
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
     def test_create_resp_data(self):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
         master = userModels.DeviceMaster.objects.create(user=user)
         data = {'user': master.id,
-                'clientID': 'client'
+                'clientID': 'test_client'
                 }
         serializer = serials.DeviceSerializer(data=data)
-        serializer.is_valid()
-        # print(f'Serializer is valid? - {serializer.is_valid()}')
-        # print(serializer.data)
+        serializer.is_valid(raise_exception=True)
         request = self.factory.post(reverse('devices'),
-                                    data=serializer.data)
+                                    data=data)
         force_authenticate(request, user=user)
         resp = self.view_list.as_view()(request)
         resp_serializer = serials.DeviceSerializer(data=resp.data)
@@ -78,18 +73,82 @@ class TestGridAPI(APITestCase):
     factory = APIRequestFactory()
     view_list = views.GridListView
 
-    def test_get_grid(self):
+    def test_get_grid_response(self):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+        master = userModels.DeviceMaster.objects.create(user=user)
         request = self.factory.get(reverse('grids'))
-        models.Grid.object.create(user=user)
+        models.Grid.objects.create(user=master)
         force_authenticate(request, user=user)
         resp = self.view_list.as_view()(request)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        
+
+    def test_get_grid_validation(self):
+        user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+        master = userModels.DeviceMaster.objects.create(user=user)
+        request = self.factory.get(reverse('grids'))
+        models.Grid.objects.create(user=master)
+        force_authenticate(request, user=user)
+        resp = self.view_list.as_view()(request)
+        for data in resp.data:
+            serializer = serials.GridSerializer(data=data, many=False)
+            self.assertTrue(serializer.is_valid(raise_exception=True))
+
+    def test_get_grid_master(self):
+        user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+        master = userModels.DeviceMaster.objects.create(user=user)
+        request = self.factory.get(reverse('grids'))
+        models.Grid.objects.create(user=master)
+        force_authenticate(request, user=user)
+        resp = self.view_list.as_view()(request)
+        for data in resp.data:
+            serializer = serials.GridSerializer(data=data, many=False)
+            serializer.is_valid(raise_exception=True)
+            # print(serializer.data)
+            self.assertEqual(serializer.data['user'], master.id)
+
 
 class TestDeviceActionAPI(APITestCase):
     factory = APIRequestFactory()
+    view = views.DeviceActionView
 
-    def test_get(self):
+    def test_no_device_action(self):
+        # No device is supposed to be found
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
-        
+        serializer = serials.DeviceActionSerializer(
+            data={'endpoint': 'test_endpoint',
+                  'clientID': 'test_clientID',
+                  'payload': 'test'}
+        )
+        serializer.is_valid(raise_exception=True)
+        request = self.factory.post(reverse('action-dev-put'), data=serializer.data)
+        force_authenticate(request, user=user)
+        resp = self.view.as_view({'post': 'dev_put'})(request)
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_action(self):
+        # Wrapper test
+        user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+        master = userModels.DeviceMaster.objects.create(user=user)
+        models.Device.objects.create(user=master, clientID='test_clientID')
+        serializer = serials.DeviceActionSerializer(
+            data={'endpoint': 'test_endpoint',
+                  'clientID': 'test_clientID',
+                  'payload': 'test'}
+        )
+        serializer.is_valid(raise_exception=True)
+        request = self.factory.post(reverse('action-dev-put'), data=serializer.data)
+        force_authenticate(request, user=user)
+        resp = self.view.as_view({'post': 'dev_put'})(request)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    # TODO: other action tests
+
+    # def test_update(self):
+    #     user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+    #
+    # def test_put(self):
+    #     user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+    #
+    # def test_read(self):
+    #     user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+
