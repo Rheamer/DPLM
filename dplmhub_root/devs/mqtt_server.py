@@ -11,6 +11,7 @@ from .serializers import DeviceSerializer
 from threading import Lock
 import time
 from threading import Thread
+# TODO: env all the data!
 mqtt_server_adress = "dff8we.stackhero-network.com"
 # mqtt_server_adress = "192.168.1.102"
 broker_port_unsafe = 1883
@@ -140,8 +141,8 @@ class MqttServer():
         self.__setup_callbacks()
         
         self._client.username_pw_set("server", "GBuNGRiupBbgOHisxz9keuQJPilRyDpk")
+        print("Trying to connect to: " + mqtt_server_adress)
         while not self._client.is_connected():
-            print("Trying to connect to: " + mqtt_server_adress)
             self._client.connect(mqtt_server_adress, broker_port_unsafe, 60)
             self._client.loop()
         self._client.loop_start()

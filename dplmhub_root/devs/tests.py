@@ -20,6 +20,7 @@ from userAuth import serializers as userSerials
 class TestDeviceView(APITestCase):
     factory = APIRequestFactory()
     view_list = views.DeviceListApiView
+    view_detail = views.DeviceApiView
 
     def test_list(self):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
@@ -27,6 +28,16 @@ class TestDeviceView(APITestCase):
         force_authenticate(request, user=user)
         resp = self.view_list.as_view()(request)
         self.assertEqual(resp.status_code, 200)
+
+    def test_detail(self):
+        user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+        master = userModels.DeviceMaster.objects.create(user=user)
+        device = models.Device.objects.create(user=master, clientID='test_clientID')
+        request = self.factory.get(reverse('detail', args=(device.id,)))
+        force_authenticate(request, user=user)
+        resp = self.view_detail.as_view()(request, id=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['clientID'], device.clientID)
 
     def test_create_resp(self):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')

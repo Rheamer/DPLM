@@ -7,6 +7,6 @@ from .views import *
 urlpatterns = [
     path('', include('djoser.urls')),
     path('', include('djoser.urls.authtoken')),
-    path('devconnect', AuthMqttView.as_view(), name = 'mosq-api-auth'),
-    path('acl', AclMqttView.as_view(), name = 'mosq-acl')
+    path('devconnect', AuthMqttView.as_view(), name='mosq-api-auth'),
+    path('acl', AclMqttView.as_view(), name='mosq-acl')
 ]
