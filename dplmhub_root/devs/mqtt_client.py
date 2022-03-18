@@ -85,12 +85,15 @@ class MqttClient:
         # _client.subscribe("$SYS/#")
     
     def __setup_callbacks(self):
-        self._client.message_callback_add('discovery/registration/#', 
-            self.__callback_registration)
-        self._client.message_callback_add('config/net/status/#', 
-            self.__callback_statusNetwork)
-        self._client.message_callback_add('discovery/aad',
-            self.__callback_deviceAAD)
+        self._client.message_callback_add(
+            'discovery/registration/#',
+            self.callback_registration)
+        self._client.message_callback_add(
+            'config/net/status/#',
+            self.callback_status_network)
+        self._client.message_callback_add(
+            'discovery/aad',
+            self.callback_deviceAAD)
 
     # The callback for when a PUBLISH message is received from the server.
     @staticmethod

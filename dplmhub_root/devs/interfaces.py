@@ -1,6 +1,7 @@
 from .serializers import DeviceSerializer
 from mqtt_client import MqttClient
 from abc import ABC, abstractmethod
+import threading
 
 def callback_registration(client, userdata, msg):
     print("MQTT endpoint received: " + msg.topic)
@@ -34,3 +35,6 @@ class DeviceGateway:
 
     def get_instance(self):
         return self._device_gateway_client.get_instance()
+
+
+threading.Thread(target=MqttClient.run_mqtt_server).start()

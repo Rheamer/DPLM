@@ -1,11 +1,8 @@
-import threading
 from . import views
 from django.urls import path, include
 from .mqtt_client import MqttClient
 from rest_framework.routers import DefaultRouter
 
-
-mqtt = MqttClient.get_instance()
 
 router = DefaultRouter()
 router.register("", views.DeviceActionView, basename='action')
@@ -18,4 +15,4 @@ urlpatterns = [
     path('grids', views.GridListView.as_view(), name='grids')
     # path('devices/create', DeviceConfigUpdateView.as_view(), name = 'creation')
 ]
-threading.Thread(target=mqtt.run_mqtt_server).start()
+
