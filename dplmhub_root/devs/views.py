@@ -9,13 +9,13 @@ from rest_framework import permissions
 from django.contrib.auth.models import User
 from .models import Device, Grid
 from .serializers import *
-from .mqtt_server import MqttServer
+from .mqtt_client import MqttClient
 import json
 from asgiref.sync import sync_to_async
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
 from decouple import config
-import functools
+from .utils import action_validation_wrapper
 
 class DeviceListApiView(generics.ListCreateAPIView):
     # add permission to check if user is authenticated
@@ -24,6 +24,12 @@ class DeviceListApiView(generics.ListCreateAPIView):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
+
+class DeviceApiView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DeviceSerializer
+    lookup_field = 'id'
+    queryset = Device.objects.all()
 
 class DeviceNetApiView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -40,51 +46,12 @@ class DeviceNetApiView(generics.GenericAPIView):
                                         wifi_ssid=validated_data['old_wifi_ssid'])
         if devices.count > 0:
             for device in devices:
-                MqttServer.getInstance().set_network(
+                MqttClient.get_instance().set_network(
                     device.wifi_ssid, device.local_address,
                     validated_data['wifi_ssid'], validated_data['wifi_pass'])
                 # we need to send it once, and for every device value will be changed
             return Response(status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_NOT_FOUND)
-
-# TODO: what's better?
-
-# def action_validation_wrapper(serializer_class):
-#     def func_wrap(action_func):
-#         @functools.wraps(action_func)
-#         def wrapper(request: Request):
-#             serializer = serializer_class(data=request.data)
-#             serializer.is_valid(raise_exception=True)
-#             devices = Device.objects\
-#                 .filter(clientID=serializer.clientID)
-#             if devices.count() == 0:
-#                 raise exceptions.NotFound(
-#                     detail="No device with provided ID")
-#             action_func(endpoint=serializer.endpoint,
-#                         deviceID=serializer.clientID,
-#                         payload=serializer.payload)
-#             return Response(status=status.HTTP_200_OK)
-#         return wrapper
-#     return func_wrap
-
-
-def action_validation_wrapper(action_func):
-    @functools.wraps(action_func)
-    def wrapper(self, request: Request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        devices = Device.objects\
-            .filter(clientID=serializer.data['clientID'])
-        if devices.count() == 0:
-            raise exceptions.NotFound(
-                detail="No device with provided ID")
-        action_func(
-            self,
-            endpoint=serializer.data['endpoint'],
-            clientID=serializer.data['clientID'],
-            payload=serializer.data['payload'])
-        return Response(status=status.HTTP_200_OK)
-    return wrapper
 
 
 class DeviceActionView(viewsets.GenericViewSet):
@@ -94,17 +61,17 @@ class DeviceActionView(viewsets.GenericViewSet):
     @action(["get"], detail=False)
     @action_validation_wrapper
     def dev_read(endpoint, clientID):
-        MqttServer.getInstance().dev_read(endpoint, clientID)
+        MqttClient.get_instance().dev_read(endpoint, clientID)
 
     @action(["post"], detail=False)
     @action_validation_wrapper
     def dev_put(self, endpoint, clientID, payload):
-        MqttServer.getInstance().dev_put(endpoint, clientID, payload)
+        MqttClient.get_instance().dev_put(endpoint, clientID, payload)
 
     @action(["put"], detail=False)
     @action_validation_wrapper
     def dev_update(self, endpoint, clientID, payload):
-        MqttServer.getInstance().dev_update(endpoint, clientID, payload)
+        MqttClient.get_instance().dev_update(endpoint, clientID, payload)
 
 
 class GridListView(generics.ListCreateAPIView):
@@ -142,7 +109,7 @@ class StreamViewConsumer(AsyncWebsocketConsumer):
                 endpoint = str(head[1])
         self.stream_name = clientID + endpoint
         self.stream_group_name = f'stream_{self.stream_name}'
-        self.mqtt = MqttServer.getInstance()
+        self.mqtt = MqttClient.get_instance()
         await self.accept()
         self.mqtt.connectStream(endpoint, clientID, self.stream_name)
         while (self.mqtt.callbackAvailable(endpoint, clientID)):
