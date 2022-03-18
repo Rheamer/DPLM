@@ -9,7 +9,7 @@ from rest_framework import permissions
 from django.contrib.auth.models import User
 from .models import Device, Grid
 from .serializers import *
-from .mqtt_server import MqttServer
+from .mqtt_client import MqttClient
 import json
 from asgiref.sync import sync_to_async
 from asgiref.sync import async_to_sync
@@ -46,7 +46,7 @@ class DeviceNetApiView(generics.GenericAPIView):
                                         wifi_ssid=validated_data['old_wifi_ssid'])
         if devices.count > 0:
             for device in devices:
-                MqttServer.getInstance().set_network(
+                MqttClient.get_instance().set_network(
                     device.wifi_ssid, device.local_address,
                     validated_data['wifi_ssid'], validated_data['wifi_pass'])
                 # we need to send it once, and for every device value will be changed
@@ -61,17 +61,17 @@ class DeviceActionView(viewsets.GenericViewSet):
     @action(["get"], detail=False)
     @action_validation_wrapper
     def dev_read(endpoint, clientID):
-        MqttServer.getInstance().dev_read(endpoint, clientID)
+        MqttClient.get_instance().dev_read(endpoint, clientID)
 
     @action(["post"], detail=False)
     @action_validation_wrapper
     def dev_put(self, endpoint, clientID, payload):
-        MqttServer.getInstance().dev_put(endpoint, clientID, payload)
+        MqttClient.get_instance().dev_put(endpoint, clientID, payload)
 
     @action(["put"], detail=False)
     @action_validation_wrapper
     def dev_update(self, endpoint, clientID, payload):
-        MqttServer.getInstance().dev_update(endpoint, clientID, payload)
+        MqttClient.get_instance().dev_update(endpoint, clientID, payload)
 
 
 class GridListView(generics.ListCreateAPIView):
@@ -109,7 +109,7 @@ class StreamViewConsumer(AsyncWebsocketConsumer):
                 endpoint = str(head[1])
         self.stream_name = clientID + endpoint
         self.stream_group_name = f'stream_{self.stream_name}'
-        self.mqtt = MqttServer.getInstance()
+        self.mqtt = MqttClient.get_instance()
         await self.accept()
         self.mqtt.connectStream(endpoint, clientID, self.stream_name)
         while (self.mqtt.callbackAvailable(endpoint, clientID)):

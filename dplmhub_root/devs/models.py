@@ -23,7 +23,7 @@ class Device(models.Model):
         DeviceMaster,
         related_name='device',
         on_delete=models.PROTECT)
-    clientID = models.CharField(max_length=100, unique=True)
+    clientID = models.CharField(max_length=100, unique=True, db_index=True)
     local_address = models.CharField(max_length=40, default='127.0.0.1')
     last_update = models.DateTimeField(auto_now=True)
     wifi_ssid = models.CharField(max_length=100, default='DPLM_BaseNetwork')
@@ -32,10 +32,6 @@ class Device(models.Model):
         Grid,
         related_name='device',
         on_delete=models.PROTECT,
-        # TODO: tests fail
-        #  TypeError: Cannot encode None for key 'grid' as POST data.
-        #  Did you mean to pass an empty string or omit the value?
-        #  when  null=True, should be otherwise
         null=True,
         blank=True)
 
@@ -43,7 +39,8 @@ class Device(models.Model):
         return self.clientID
 
 
-class Topic(models.Model):
-    user = models.ForeignKey(DeviceMaster, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100, default='')
+class DeviceReadLog(models.Model):
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    value = models.FloatField(default=0)
+    endpoint = models.CharField(max_length=100)
 

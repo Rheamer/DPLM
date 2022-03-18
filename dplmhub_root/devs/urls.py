@@ -1,11 +1,11 @@
 import threading
 from . import views
 from django.urls import path, include
-from .mqtt_server import MqttServer
+from .mqtt_client import MqttClient
 from rest_framework.routers import DefaultRouter
 
 
-mqtt = MqttServer.getInstance()
+mqtt = MqttClient.get_instance()
 
 router = DefaultRouter()
 router.register("", views.DeviceActionView, basename='action')
