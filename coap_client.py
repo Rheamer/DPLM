@@ -31,7 +31,7 @@ async def main():
             # print('Answer from: %s\n'%(response.code))
 
             request = Message(code=Method.PUT, payload=b"0",
-                uri='coap://dplm-hub.herokuapp.com/discovery')
+                uri='')
             response = await protocol.request(request).response
             print('Answer from server: %s\n'%(response.code))
         except Exception as e:

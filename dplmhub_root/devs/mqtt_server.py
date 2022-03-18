@@ -11,11 +11,11 @@ from .serializers import DeviceSerializer
 from threading import Lock
 import time
 from threading import Thread
+from decouple import config
 # TODO: env all the data!
-mqtt_server_adress = "dff8we.stackhero-network.com"
-# mqtt_server_adress = "192.168.1.102"
-broker_port_unsafe = 1883
-broker_port_tls = 8883
+mqtt_server_address = config("URL_BROKER_NETWORK")
+broker_port_unsafe = config("BROKER_PORT_UNSAFE")
+broker_port_tls = config("BROKER_PORT_TLS")
 
 class DeviceManager:
     dev_local_adr  = {}  
@@ -133,17 +133,20 @@ class MqttServer():
         return __callback_digestStream
 
     def run_mqtt_server(self):
-        self._client = mqtt.Client(client_id = "DplmHubServer")
+        self._client = mqtt.Client(client_id = config("DJANGO_MQTT_CLIENT_ID"))
         self._client.enable_logger()
         self._client.on_connect = self.__on_connect
         self._client.on_message = self.__on_message
         self._client.on_disconnect = self.__on_disconnect
         self.__setup_callbacks()
         
-        self._client.username_pw_set("server", "GBuNGRiupBbgOHisxz9keuQJPilRyDpk")
-        print("Trying to connect to: " + mqtt_server_adress)
+        self._client.username_pw_set(
+            config("DJANGO_MQTT_USERNAME"),
+            config("DJANGO_MQTT_PASSWORD"))
+
+        print("Trying to connect to: " + mqtt_server_address)
         while not self._client.is_connected():
-            self._client.connect(mqtt_server_adress, broker_port_unsafe, 60)
+            self._client.connect(mqtt_server_address, broker_port_unsafe, 60)
             self._client.loop()
         self._client.loop_start()
 
