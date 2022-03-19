@@ -16,6 +16,9 @@ from devs import models
 from devs import views
 from userAuth import models as userModels
 from userAuth import serializers as userSerials
+from .interfaces import get_gateway_factory
+
+
 # Create your tests here.
 class TestDeviceView(APITestCase):
     factory = APIRequestFactory()
@@ -35,8 +38,8 @@ class TestDeviceView(APITestCase):
         device = models.Device.objects.create(user=master, clientID='test_clientID')
         request = self.factory.get(reverse('detail', args=(device.id,)))
         force_authenticate(request, user=user)
-        resp = self.view_detail.as_view()(request, id=1)
-        self.assertEqual(resp.status_code, 200)
+        resp = self.view_detail.as_view()(request, id=device.id)
+        self.assertEqual(resp.status_code, 200, msg=resp.data)
         self.assertEqual(resp.data['clientID'], device.clientID)
 
     def test_create_resp(self):

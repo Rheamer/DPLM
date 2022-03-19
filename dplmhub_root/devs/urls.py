@@ -2,7 +2,11 @@ from . import views
 from django.urls import path, include
 from .mqtt_client import MqttClient
 from rest_framework.routers import DefaultRouter
+from .interfaces import get_gateway_factory
 
+gateway_client_factory = get_gateway_factory()
+gateway_client_factory.setup()
+get_gateway_factory().get_instance().connect()
 
 router = DefaultRouter()
 router.register("", views.DeviceActionView, basename='action')

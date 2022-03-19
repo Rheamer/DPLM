@@ -10,11 +10,13 @@ from threading import Lock
 import time
 from threading import Thread
 from decouple import config
+import threading
+
 mqtt_server_address = config("URL_BROKER_NETWORK")
-broker_port_unsafe = config("BROKER_PORT_UNSAFE")
-broker_port_tls = config("BROKER_PORT_TLS")
+broker_port_unsafe = int(config("BROKER_PORT_UNSAFE"))
+broker_port_tls = int(config("BROKER_PORT_TLS"))
 
-
+# TODO: inherit from gateway interface
 class MqttClient:
     '''
     Singleton running next to django server
@@ -23,6 +25,7 @@ class MqttClient:
     _streams = {str: bytearray}
     _streams_mutx = {str: Lock}
     _callbacks = set()
+    _client = None
 
     """ Server side callbacks """
     callback_registration = None
@@ -114,7 +117,7 @@ class MqttClient:
         return ':'.join(args)
 
     """ Public methods """
-    def run_mqtt_server(self):
+    def connect(self):
         self._client = mqtt.Client(client_id = config("DJANGO_MQTT_CLIENT_ID"))
         self._client.enable_logger()
         self._client.on_connect = self.__on_connect

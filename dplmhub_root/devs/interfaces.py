@@ -1,7 +1,8 @@
 from .serializers import DeviceSerializer
-from mqtt_client import MqttClient
+from .mqtt_client import MqttClient
 from abc import ABC, abstractmethod
-import threading
+from enum import Enum
+
 
 def callback_registration(client, userdata, msg):
     print("MQTT endpoint received: " + msg.topic)
@@ -16,25 +17,50 @@ def callback_registration(client, userdata, msg):
     if serializer.is_valid():
         serializer.save()
 
+
 def callback_read(client, userdata, msg):
     pass
     # read msg []
 
-MqttClient.callback_registration = callback_registration
-# TODO: define callbacks
-MqttClient.callback_read = None
-MqttClient.callback_status_network = None
-MqttClient.callback_deviceAAD = None
 
-# TODO: create gateway client interface, then pass it to device gateway facade
+# TODO: define callbacks
+def callback_status_network(client, userdata, msg):
+    pass
+
+
+def callback_deviceAAD(client, userdata, msg):
+    pass
+
+# interface for gateway client instance, to switch out mqtt and coap for example
+# TODO: create gateway client interface, gateway's factory get_instance should
+#  declare return type as interface
 class GatewayClient(ABC):
     pass
 
-class DeviceGateway:
-    _device_gateway_client = MqttClient
 
-    def get_instance(self):
-        return self._device_gateway_client.get_instance()
+class GatewayFactory(ABC):
+    _gateway_client = None
+
+    @abstractmethod
+    def setup(self) -> None:
+        pass
+
+# TODO: change return type to interface
+    @classmethod
+    def get_instance(cls):
+        instance = cls._gateway_client.get_instance()
+        return instance
 
 
-threading.Thread(target=MqttClient.run_mqtt_server).start()
+class MqttGatewayFactory(GatewayFactory):
+    _gateway_client = MqttClient
+
+    def setup(self) -> None:
+        self._gateway_client.callback_registration = callback_registration
+        self._gateway_client.callback_read = callback_read
+        self._gateway_client.callback_status_network = callback_status_network
+        self._gateway_client.callback_deviceAAD = callback_deviceAAD
+
+
+def get_gateway_factory() -> GatewayFactory:
+    return MqttGatewayFactory()

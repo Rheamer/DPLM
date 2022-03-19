@@ -9,13 +9,14 @@ from rest_framework import permissions
 from django.contrib.auth.models import User
 from .models import Device, Grid
 from .serializers import *
-from .mqtt_client import MqttClient
+from .interfaces import get_gateway_factory
 import json
 from asgiref.sync import sync_to_async
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
 from decouple import config
 from .utils import action_validation_wrapper
+
 
 class DeviceListApiView(generics.ListCreateAPIView):
     # add permission to check if user is authenticated
@@ -30,6 +31,7 @@ class DeviceApiView(generics.RetrieveAPIView):
     serializer_class = DeviceSerializer
     lookup_field = 'id'
     queryset = Device.objects.all()
+
 
 class DeviceNetApiView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -46,11 +48,11 @@ class DeviceNetApiView(generics.GenericAPIView):
                                         wifi_ssid=validated_data['old_wifi_ssid'])
         if devices.count > 0:
             for device in devices:
-                MqttClient.get_instance().set_network(
+                get_gateway_factory().get_instance().set_network(
                     device.wifi_ssid, device.local_address,
                     validated_data['wifi_ssid'], validated_data['wifi_pass'])
                 # we need to send it once, and for every device value will be changed
-            return Response(status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_NOT_FOUND)
 
 
@@ -61,17 +63,23 @@ class DeviceActionView(viewsets.GenericViewSet):
     @action(["get"], detail=False)
     @action_validation_wrapper
     def dev_read(endpoint, clientID):
-        MqttClient.get_instance().dev_read(endpoint, clientID)
+        get_gateway_factory()\
+            .get_instance()\
+            .dev_read(endpoint, clientID)
 
     @action(["post"], detail=False)
     @action_validation_wrapper
     def dev_put(self, endpoint, clientID, payload):
-        MqttClient.get_instance().dev_put(endpoint, clientID, payload)
+        get_gateway_factory()\
+            .get_instance()\
+            .dev_put(endpoint, clientID, payload)
 
     @action(["put"], detail=False)
     @action_validation_wrapper
     def dev_update(self, endpoint, clientID, payload):
-        MqttClient.get_instance().dev_update(endpoint, clientID, payload)
+        get_gateway_factory()\
+            .get_instance()\
+            .dev_update(endpoint, clientID, payload)
 
 
 class GridListView(generics.ListCreateAPIView):
@@ -109,20 +117,20 @@ class StreamViewConsumer(AsyncWebsocketConsumer):
                 endpoint = str(head[1])
         self.stream_name = clientID + endpoint
         self.stream_group_name = f'stream_{self.stream_name}'
-        self.mqtt = MqttClient.get_instance()
+        self.gateway = get_gateway_factory().get_instance()
         await self.accept()
-        self.mqtt.connectStream(endpoint, clientID, self.stream_name)
-        while (self.mqtt.callbackAvailable(endpoint, clientID)):
-            if not self.mqtt.isEmptyStream(self.stream_name):
-                data = self.mqtt.pullStream(self.stream_name)
+        self.gateway.connectStream(endpoint, clientID, self.stream_name)
+        while (self.gateway.callbackAvailable(endpoint, clientID)):
+            if not self.gateway.isEmptyStream(self.stream_name):
+                data = self.gateway.pullStream(self.stream_name)
                 async_to_sync(self.send)(bytes_data=bytes(data))
                 await asyncio.sleep(0.001)
-                print(self.mqtt.streamMsgCount(self.stream_name))
+                print(self.gateway.streamMsgCount(self.stream_name))
                 # print(data)
 
     async def disconnect(self, close_code):
         # Leave room group
-        self.mqtt.disconnectStream(self.stream_name)
+        self.gateway.disconnectStream(self.stream_name)
         await self.channel_layer.group_discard(
             self.stream_group_name,
         )
