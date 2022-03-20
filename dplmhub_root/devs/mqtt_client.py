@@ -169,12 +169,15 @@ class MqttClient:
 
     def dev_read(self, endpoint, deviceID):
         # Publish request to get a singular response with a value
-        # TODO: pass endpoint and deviceID to callback, without having device to send that
+
+        def callback_read_close(*args, **kwargs):
+            self.callback_read(deviceID=deviceID, endpoint=endpoint, *args, **kwargs)
+            self._client.message_callback_remove(
+                f'action/read/{endpoint}/{deviceID}')
+
         self._client.message_callback_add(
             f'action/read/{endpoint}/{deviceID}',
-            self.callback_read)
+            callback_read_close)
         self._client.publish(f'action/read/{endpoint}/{deviceID}')
-
-        self._client.message_callback_remove(f'action/update/{endpoint}/{deviceID}')
 
 

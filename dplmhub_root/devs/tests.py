@@ -117,7 +117,6 @@ class TestGridAPI(APITestCase):
         for data in resp.data:
             serializer = serials.GridSerializer(data=data, many=False)
             serializer.is_valid(raise_exception=True)
-            # print(serializer.data)
             self.assertEqual(serializer.data['user'], master.id)
 
 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Device, Grid
+from .models import Device, Grid, DeviceReadLog
 
 
 class DeviceSerializer(serializers.ModelSerializer):
@@ -20,9 +20,7 @@ class NetworkSwitchSerializer(serializers.Serializer):
     wifi_pass = serializers.CharField(max_length=100)
 
 
-class DeviceActionSerializer(serializers.Serializer):
-    endpoint = serializers.CharField(max_length=30)
-    clientID = serializers.CharField(max_length=50)
-    payload = serializers.CharField(allow_null=True)
-
-
+class DeviceReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceReadLog
+        fields = 'value, endpoint'

@@ -1,4 +1,5 @@
-from .serializers import DeviceSerializer
+from .serializers import DeviceSerializer, DeviceReadSerializer
+from .models import Device
 from .mqtt_client import MqttClient
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -18,9 +19,16 @@ def callback_registration(client, userdata, msg):
         serializer.save()
 
 
-def callback_read(client, userdata, msg):
-    pass
-    # read msg []
+def callback_read(client, userdata, msg, deviceID, endpoint):
+    serializer = DeviceReadSerializer(data={
+        'value': msg.payload,
+        'endpoint': endpoint}
+    )
+    if serializer.is_valid():
+        obj = serializer.instance
+        query = Device.objects.filter(clientID=deviceID)
+        obj.device = query.get(0).id
+        obj.save()
 
 
 # TODO: define callbacks
