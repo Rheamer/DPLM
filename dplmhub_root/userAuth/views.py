@@ -1,56 +1,59 @@
-from http import client
-from django.shortcuts import render
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.request import Request
 from django.contrib.auth.models import User
-from .models import DeviceMaster
+from .serializers import AclMosquittoSerializer, AuthMosquittoSerializer
 from rest_framework import permissions
 from django.contrib.auth import authenticate
-from devs.models import Device
+from rest_framework import generics
+
+
+class ValidateDataMixin():
+    def get_validated_data(self, request: Request, *args, **kwargs):
+        serializer = self.get_serializer(request.data)
+        serializer.is_valid(raise_exceptions=True)
+        return serializer.validated_data
+
+
 # Create your views here.
-class AclMqttView(APIView):
+class AclMqttView(generics.GenericAPIView, ValidateDataMixin):
     permission_classes = [permissions.AllowAny]
-    queryset = DeviceMaster.objects.select_related('User')
+    serializer_class = AclMosquittoSerializer
+
     def post(self, request: Request, *args, **kwargs):
-        
-        _username = request.data.get('username')
-        _clientID = request.data.get('clientid')
-        _topic = request.data.get('topic')
-        _access = request.data.get('acc')
+        acl_request = self.get_validated_data(request)
+        if acl_request['topic'] == 'discovery/registration':
+            return Response(status=status.HTTP_200_OK)
 
-        if _topic == 'discovery/registration':
-            return Response( status = status.HTTP_200_OK )
+        user = User.objects.filter(username=acl_request['username']).get(0)
+        device_master = user.device_masters.objects.all().get(0)
+        device = device_master.devices.objects\
+            .filter(clientID=acl_request['clientid'])
 
-        query = Device.objects.all().filter(clientID = _clientID)\
-            .select_related('User')\
-            .select_related('User')
+        if device.count() < 1:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
-        if query.count() != 1:
-            return Response( status = status.HTTP_400_NOT_FOUND )
+        access = acl_request['access']
+        if access == 1 or access == 4:  # subscribe and read is the same
+            if device_master.can_read:
+                return Response(status=status.HTTP_200_OK)
 
-        ## Validate topic!!!!!!!!!!!!
-        ## Check by name or clientID, they HAVE to be present for private control
+        if access == 2 or access == 3:  # write and read/write
+            if device_master.can_write:
+                return Response(status=status.HTTP_200_OK)
 
-        if _access == 1 or _access == 4: #subscribe and read is the same
-            if query[0].can_read:
-                return Response( status = status.HTTP_200_OK )
-        
-        if _access == 2 or _access == 3: #write and read/write 
-            return Response( status = status.HTTP_200_OK )
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
-        return Response( status = status.HTTP_400_NOT_FOUND ) 
 
-class AuthMqttView(APIView):
+class AuthMqttView(generics.GenericAPIView, ValidateDataMixin):
     permission_classes = [permissions.AllowAny]
-    queryset = User.objects.filter()
+    serializer_class = AuthMosquittoSerializer
+
     def post(self, request: Request, *args, **kwargs):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
+        auth_request = self.get_validated_data(request)
+        user = authenticate(username=auth_request['username'],
+                            password=auth_request['password'])
         if user is not None:
-            return Response( status = status.HTTP_200_OK )
+            return Response(status=status.HTTP_200_OK)
         else:
-            return Response( status = status.HTTP_400_NOT_FOUND ) 
-
+            return Response(status=status.HTTP_401_UNAUTHORIZED)

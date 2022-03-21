@@ -21,7 +21,7 @@ class Grid(models.Model):
 class Device(models.Model):
     user = models.ForeignKey(
         DeviceMaster,
-        related_name='device',
+        related_name='devices',
         on_delete=models.PROTECT)
     clientID = models.CharField(max_length=100, unique=True, db_index=True)
     local_address = models.CharField(max_length=40, default='127.0.0.1')

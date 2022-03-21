@@ -2,7 +2,6 @@ from .serializers import DeviceSerializer, DeviceActionSerializer
 from .models import Device
 from .mqtt_client import MqttClient
 from abc import ABC, abstractmethod
-from enum import Enum
 
 
 def callback_registration(client, userdata, msg):
