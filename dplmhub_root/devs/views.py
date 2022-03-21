@@ -15,7 +15,7 @@ from asgiref.sync import sync_to_async
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
 from decouple import config
-from .utils import action_validation_wrapper
+from .utils import action_on_object_validated, FilterableSerializer
 
 
 class DeviceListApiView(generics.ListCreateAPIView):
@@ -60,26 +60,34 @@ class DeviceActionView(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DeviceActionSerializer
 
+    def get_serializer(self, *args, **kwargs) -> FilterableSerializer:
+        return self.serializer_class(*args, **kwargs)
+
     @action(["get"], detail=False)
-    @action_validation_wrapper
-    def dev_read(endpoint, clientID):
+    @action_on_object_validated(Device)
+    def dev_read(self, data):
         get_gateway_factory()\
             .get_instance()\
-            .dev_read(endpoint, clientID)
+            .dev_read(data['endpoint'],
+                      data['clientID'])
 
     @action(["post"], detail=False)
-    @action_validation_wrapper
-    def dev_put(self, endpoint, clientID, payload):
+    @action_on_object_validated(Device)
+    def dev_put(self, data):
         get_gateway_factory()\
             .get_instance()\
-            .dev_put(endpoint, clientID, payload)
+            .dev_put(data['endpoint'],
+                     data['clientID'],
+                     data['payload'])
 
     @action(["put"], detail=False)
-    @action_validation_wrapper
-    def dev_update(self, endpoint, clientID, payload):
+    @action_on_object_validated(Device)
+    def dev_update(self, data):
         get_gateway_factory()\
             .get_instance()\
-            .dev_update(endpoint, clientID, payload)
+            .dev_update(data['endpoint'],
+                        data['clientID'],
+                        data['payload'])
 
 
 class GridListView(generics.ListCreateAPIView):

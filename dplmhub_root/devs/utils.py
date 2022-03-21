@@ -6,6 +6,8 @@ from rest_framework.request import Request
 from rest_framework import status
 from rest_framework import exceptions
 from .models import Device
+from abc import ABC, abstractmethod
+from rest_framework import serializers
 
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
@@ -18,20 +20,27 @@ class DeviceException(APIException):
     pass
 
 
-def action_validation_wrapper(action_func):
-    @functools.wraps(action_func)
-    def wrapper(self, request: Request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        devices = Device.objects\
-            .filter(clientID=serializer.data['clientID'])
-        if devices.count() == 0:
-            raise exceptions.NotFound(
-                detail="No device with provided ID")
-        action_func(
-            self,
-            endpoint=serializer.data['endpoint'],
-            clientID=serializer.data['clientID'],
-            payload=serializer.data['payload'])
-        return Response(status=status.HTTP_200_OK)
-    return wrapper
+class FilterableSerializer(serializers.Serializer):
+
+    @abstractmethod
+    def get_filter_field(self):
+        pass
+
+
+def action_on_object_validated(filtered_model):
+    def inner(action_func):
+        @functools.wraps(action_func)
+        def wrapper(self, request: Request):
+            serializer: FilterableSerializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            devices = filtered_model.objects\
+                .filter(clientID=serializer.get_filter_field())
+            if devices.count() == 0:
+                raise exceptions.NotFound(
+                    detail="No device with provided ID")
+            action_func(
+                self,
+                serializer.validated_data)
+            return Response(status=status.HTTP_200_OK)
+        return wrapper
+    return inner
