@@ -7,6 +7,7 @@ from rest_framework import permissions
 from django.contrib.auth import authenticate
 from rest_framework import generics
 from rest_framework import exceptions
+from .utils import is_valid_topic
 
 class ValidateDataMixin:
     def get_validated_data(self, request: Request, *args, **kwargs):
@@ -24,7 +25,6 @@ class AclMosquittoView(generics.GenericAPIView, ValidateDataMixin):
         acl_request = self.get_validated_data(request)
         if acl_request['topic'] == 'discovery/registration':
             return Response(status=status.HTTP_200_OK)
-
         user_query = User.objects.filter(username=acl_request['username'])
         if user_query.count() < 1:
             raise exceptions.NotFound()
@@ -32,9 +32,13 @@ class AclMosquittoView(generics.GenericAPIView, ValidateDataMixin):
         device_master = user.device_masters.all()[0]
         device = device_master.devices\
             .filter(clientID=acl_request['clientid'])
-
         if device.count() < 1:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            raise exceptions.PermissionDenied('No such devices are registered')
+
+        # Topic validation: should have client ID
+        if not is_valid_topic(topic=acl_request['topic'],
+                              clientID=acl_request['clientid']):
+            raise exceptions.PermissionDenied('No permission for this topic')
 
         access = acl_request['access']
         if access == 1 or access == 4:  # subscribe and read is the same

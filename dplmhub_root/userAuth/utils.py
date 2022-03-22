@@ -11,3 +11,16 @@ def registrate_device_master(*args, **kwargs):
     master.can_write = True
     master.can_subscribe = True
     master.save()
+
+
+def is_valid_topic(topic: str, clientID: str):
+    """ Only valid if topic are delimited by '/' """
+    start_index = topic.find(clientID)
+    try:
+        if topic[start_index-1] == '/' and \
+                topic[start_index+len(clientID)] == '/':
+            return True
+    except IndexError:
+        return False
+    finally:
+        return False

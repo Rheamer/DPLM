@@ -49,7 +49,7 @@ class TestMosquittoView(APITestCase):
         data = {
             'username': 'test_name',
             'clientid': 'test_clientid',
-            'topic': 'test_topic',
+            'topic': 'test_topic/test_clientid/test_endpoint',
             'access': '1'
         }
         serializer = AclMosquittoSerializer(data=data)
@@ -59,7 +59,7 @@ class TestMosquittoView(APITestCase):
             data=serializer.validated_data)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-    def test_acl_subscribe_forbidden(self):
+    def test_acl_subscribe_no_device(self):
         # Create user
         user = User.objects.create_user(username='test_name', password='test_password')
         dev_master = DeviceMaster.objects.create(user=user, can_write=False)
@@ -67,7 +67,25 @@ class TestMosquittoView(APITestCase):
         data = {
             'username': 'test_name',
             'clientid': 'test_clientid',
-            'topic': 'test_topic',
+            'topic': 'test_topic/test_clientid/test_endpoint',
+            'access': '2'
+        }
+        serializer = AclMosquittoSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        resp = self.client.post(
+            reverse('mosq-acl'),
+            data=serializer.validated_data)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_acl_subscribe_bad_topic(self):
+        # Create user
+        user = User.objects.create_user(username='test_name', password='test_password')
+        dev_master = DeviceMaster.objects.create(user=user, can_write=False)
+        device = Device.objects.create(user=dev_master, clientID='test_clientid')
+        data = {
+            'username': 'test_name',
+            'clientid': 'test_client2',
+            'topic': 'test_topic/test_clientid/test_endpoint',
             'access': '2'
         }
         serializer = AclMosquittoSerializer(data=data)
