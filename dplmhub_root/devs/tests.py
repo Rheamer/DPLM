@@ -23,6 +23,7 @@ class TestDeviceView(APITestCase):
     factory = APIRequestFactory()
     view_list = views.DeviceListApiView
     view_detail = views.DeviceApiView
+    multi_db = True
 
     def test_list(self):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
@@ -85,6 +86,7 @@ class TestDeviceView(APITestCase):
 class TestGridAPI(APITestCase):
     factory = APIRequestFactory()
     view_list = views.GridListView
+    multi_db = True
 
     def test_get_grid_response(self):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
@@ -122,6 +124,7 @@ class TestGridAPI(APITestCase):
 class TestDeviceActionAPI(APITestCase):
     factory = APIRequestFactory()
     view = views.DeviceActionView
+    multi_db = True
 
     def test_no_device_action(self):
         # No device is supposed to be found
@@ -152,6 +155,31 @@ class TestDeviceActionAPI(APITestCase):
         force_authenticate(request, user=user)
         resp = self.view.as_view({'post': 'dev_put'})(request)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_action_read(self):
+        # Wrapper test
+        user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+        master = userModels.DeviceMaster.objects.create(user=user)
+        device = models.Device.objects.create(user=master, clientID='test_clientID')
+        readlog = models.DeviceReadLog\
+            .objects.create(device=device,
+                            data='7d2d2d',
+                            endpoint='test_endpoint')
+        actual_data = serials.DeviceReadLogSerializer(readlog, many=False).data
+        action_data = {'endpoint': 'test_endpoint',
+                       'clientID': 'test_clientID'}
+        serializer = serials.DeviceActionSerializer(data=action_data)
+        serializer.is_valid(raise_exception=True)
+        request = self.factory.post(reverse('action-dev-read'),
+                                    data=action_data)
+        force_authenticate(request, user=user)
+        resp = self.view.as_view({'post': 'dev_read'})(request)
+        print(request)
+        print(resp)
+        self.assertIsNotNone(resp.data)
+        self.assertEqual(resp.data['data'], actual_data['data'])
+        self.assertEqual(resp.data['endpoint'], actual_data['endpoint'])
+
 
     # TODO: other action tests
 

@@ -16,16 +16,17 @@ mqtt_server_address = config("URL_BROKER_NETWORK")
 broker_port_unsafe = int(config("BROKER_PORT_UNSAFE"))
 broker_port_tls = int(config("BROKER_PORT_TLS"))
 
+
 # TODO: inherit from gateway interface
 class MqttClient:
-    '''
+    """
     Singleton running next to django server
-    '''
+    """
     _server = None
-    _streams = {str: bytearray}
-    _streams_mutx = {str: Lock}
     _callbacks = set()
     _client = None
+    _streams = {str: bytearray}
+    _streams_mutx = {str: Lock}
 
     """ Server side callbacks """
     callback_registration = None
@@ -41,45 +42,6 @@ class MqttClient:
         if cls._server is None:
             cls._server = cls.__new__(cls)
         return cls._server
-
-    """ Stream related methods """
-    def push_stream(self, stream_name, data):
-        if stream_name not in self._streams_mutx:
-            self._streams_mutx[stream_name] = Lock()
-            
-        self._streams_mutx[stream_name].acquire()
-        try:
-            if stream_name not in self._streams:
-                self._streams[stream_name] = bytearray()
-            self._streams[stream_name] += bytearray(data)
-            print('Push stream ' + stream_name + " "  + str(len(data)))
-        finally:
-            self._streams_mutx[stream_name].release()
-
-    def pullStream(self, stream_name):        
-        if stream_name not in self._streams:
-            print('Not found stream')
-            return ''
-        self._streams_mutx[stream_name].acquire()
-        try:
-            data = self._streams[stream_name]
-            print('Pull stream ' + stream_name + " " + str(len(data)))
-            self._streams.pop(stream_name)
-        finally:
-            self._streams_mutx[stream_name].release()
-            return data
-
-    def pull_string_stream(self, stream_name):
-        return self.pullStream(stream_name).decode('utf-8')
-
-    def streamMsgCount(self, stream_name):
-        if stream_name not in self._streams:
-            return 0
-        else: 
-            return len(self._streams[stream_name])
-
-    def isEmptyStream(self, stream_name):
-        return stream_name not in self._streams or self._streams.get(stream_name) == ''
 
     """ Internal callbacks """
     @staticmethod
@@ -108,11 +70,7 @@ class MqttClient:
         print('Disconnected with result code: ' + str(rc))
 
     """ Utility """
-    def _makeStreamDigestionF(self, stream_name):
-        def __callback_digestStream(client, userdata, msg):
-            self.push_stream(stream_name, msg.payload)
-        return __callback_digestStream
-
+    @staticmethod
     def parsarg(args: List[str]):
         return ':'.join(args)
 
@@ -143,20 +101,6 @@ class MqttClient:
             "config/net/" + self.parsarg([old_ssid,old_address]),
             self.parsarg([ssid, password]))
 
-    def connectStream(self, endpoint, deviceID, stream_name = '########'):
-        if stream_name == '########':
-            stream_name = endpoint + deviceID
-        # print('Subscribing to stream ' + endpoint)
-        self._callbacks.add(f'action/read/{endpoint}/{deviceID}')
-        self._client.subscribe(f'action/read/{endpoint}/{deviceID}')
-        self._client.message_callback_add(f'action/read/{endpoint}/{deviceID}',
-            self._makeStreamDigestionF(stream_name))
-
-    # add deletion of a stream
-    def disconnectStream(self, endpoint, deviceID):
-        self._client.message_callback_remove(f'action/read/{endpoint}/{deviceID}')
-        self._callbacks.remove(f'action/read/{endpoint}/{deviceID}')
-
     def callbackAvailable(self, endpoint, deviceID):
         return f'action/read/{endpoint}/{deviceID}' in self._callbacks
 
@@ -179,5 +123,65 @@ class MqttClient:
             f'action/read/{endpoint}/{deviceID}',
             callback_read_close)
         self._client.publish(f'action/read/{endpoint}/{deviceID}')
+
+
+
+    """ Stream related methods """
+    def _makeStreamDigestionF(self, stream_name):
+        def __callback_digestStream(client, userdata, msg):
+            self.push_stream(stream_name, msg.payload)
+        return __callback_digestStream
+
+    def push_stream(self, stream_name, data):
+        if stream_name not in self._streams_mutx:
+            self._streams_mutx[stream_name] = Lock()
+
+        self._streams_mutx[stream_name].acquire()
+        try:
+            if stream_name not in self._streams:
+                self._streams[stream_name] = bytearray()
+            self._streams[stream_name] += bytearray(data)
+            print('Push stream ' + stream_name + " " + str(len(data)))
+        finally:
+            self._streams_mutx[stream_name].release()
+
+    def pullStream(self, stream_name):
+        if stream_name not in self._streams:
+            print('Not found stream')
+            return ''
+        self._streams_mutx[stream_name].acquire()
+        try:
+            data = self._streams[stream_name]
+            print('Pull stream ' + stream_name + " " + str(len(data)))
+            self._streams.pop(stream_name)
+        finally:
+            self._streams_mutx[stream_name].release()
+            return data
+
+    def pull_string_stream(self, stream_name):
+        return self.pullStream(stream_name).decode('utf-8')
+
+    def streamMsgCount(self, stream_name):
+        if stream_name not in self._streams:
+            return 0
+        else:
+            return len(self._streams[stream_name])
+
+    def isEmptyStream(self, stream_name):
+        return stream_name not in self._streams or self._streams.get(stream_name) == ''
+
+    def connectStream(self, endpoint, deviceID, stream_name = '########'):
+        if stream_name == '########':
+            stream_name = endpoint + deviceID
+        # print('Subscribing to stream ' + endpoint)
+        self._callbacks.add(f'action/read/{endpoint}/{deviceID}')
+        self._client.subscribe(f'action/read/{endpoint}/{deviceID}')
+        self._client.message_callback_add(f'action/read/{endpoint}/{deviceID}',
+            self._makeStreamDigestionF(stream_name))
+
+    # add deletion of a stream
+    def disconnectStream(self, endpoint, deviceID):
+        self._client.message_callback_remove(f'action/read/{endpoint}/{deviceID}')
+        self._callbacks.remove(f'action/read/{endpoint}/{deviceID}')
 
 

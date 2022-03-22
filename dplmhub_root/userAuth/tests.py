@@ -13,6 +13,7 @@ from devs.models import Device
 class TestUserView(APITestCase):
     factory = APIRequestFactory()
     view = AuthMosquittoView
+    multi_db = True
 
     def test_registration(self):
         data = {
@@ -40,6 +41,7 @@ class TestUserView(APITestCase):
 class TestMosquittoView(APITestCase):
     factory = APIRequestFactory()
     view = AclMosquittoView
+    multi_db = True
 
     def test_acl_subscribe(self):
         # Create user

@@ -38,9 +38,12 @@ def action_on_object_validated(filtered_model):
             if devices.count() == 0:
                 raise exceptions.NotFound(
                     detail="No device with provided ID")
-            action_func(
+            data = action_func(
                 self,
                 serializer.validated_data)
-            return Response(status=status.HTTP_200_OK)
+            if data is None:
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response(status=status.HTTP_200_OK, data=data)
         return wrapper
     return inner

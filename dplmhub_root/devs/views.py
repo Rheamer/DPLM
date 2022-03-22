@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework import status
 from rest_framework import permissions
 from django.contrib.auth.models import User
-from .models import Device, Grid
+from .models import Device, Grid, DeviceReadLog
 from .serializers import *
 from .interfaces import get_gateway_factory
 import json
@@ -59,17 +59,35 @@ class DeviceNetApiView(generics.GenericAPIView):
 class DeviceActionView(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DeviceActionSerializer
+    response_serializer = DeviceReadLogSerializer
+    queryset = User.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(id=self.request.user.id)
+
+    def get_client_reading(self, clientID: str):
+        user = self.get_queryset()[0]
+        dev_master = user.device_masters.all().first()
+        device = dev_master.devices.filter(clientID=clientID).first()
+        return device.readings.latest('read_time')
 
     def get_serializer(self, *args, **kwargs) -> FilterableSerializer:
         return self.serializer_class(*args, **kwargs)
 
-    @action(["get"], detail=False)
+    @action(["post"], detail=False)
     @action_on_object_validated(Device)
     def dev_read(self, data):
+        """ Returns last received reading, published request for a new one """
         get_gateway_factory()\
             .get_instance()\
             .dev_read(data['endpoint'],
                       data['clientID'])
+        readings = self.get_client_reading(data['clientID'])
+        if readings is not None:
+            serializer = self.\
+                response_serializer(readings,
+                                    many=False)
+            return serializer.data
 
     @action(["post"], detail=False)
     @action_on_object_validated(Device)
@@ -112,8 +130,14 @@ class StreamControllerView(generics.GenericAPIView):
             status=status.HTTP_200_OK)
 
 
-class StreamViewConsumer(AsyncWebsocketConsumer):
+class AsyncReadView(AsyncWebsocketConsumer):
     permission_classes = [permissions.IsAuthenticated]
+
+# TODO: Async view for singular value read
+
+class AsyncStreamViewConsumer(AsyncWebsocketConsumer):
+    """ Whole view is useless for realtime data broadcast, unless multiprocessed """
+    permission_classes = [permissions.IsAdminUser]
 
     async def connect(self):
         self.groupname = "Stream"

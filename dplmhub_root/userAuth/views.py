@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate
 from rest_framework import generics
 from rest_framework import exceptions
 from .utils import is_valid_topic
+from decouple import config
 
 class ValidateDataMixin:
     def get_validated_data(self, request: Request, *args, **kwargs):
@@ -23,8 +24,12 @@ class AclMosquittoView(generics.GenericAPIView, ValidateDataMixin):
 
     def post(self, request: Request, *args, **kwargs):
         acl_request = self.get_validated_data(request)
+        # Server can do anything on any topic
+        if acl_request['clientid'] == config('DJANGO_MQTT_CLIENT_ID'):
+            return Response(status=status.HTTP_200_OK)
         if acl_request['topic'] == 'discovery/registration':
             return Response(status=status.HTTP_200_OK)
+
         user_query = User.objects.filter(username=acl_request['username'])
         if user_query.count() < 1:
             raise exceptions.NotFound()

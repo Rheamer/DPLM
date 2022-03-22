@@ -23,7 +23,7 @@ class NetworkSwitchSerializer(serializers.Serializer):
 
 class DeviceActionSerializer(FilterableSerializer):
     clientID = serializers.CharField()
-    payload = serializers.CharField()
+    payload = serializers.CharField(allow_blank=True, default=None)
     endpoint = serializers.CharField()
 
     def get_filter_field(self):
@@ -32,3 +32,9 @@ class DeviceActionSerializer(FilterableSerializer):
     # class Meta:
     #     model = DeviceReadLog
     #     fields = ['value', 'endpoint', 'clientID']
+
+
+class DeviceReadLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceReadLog
+        fields = '__all__'
