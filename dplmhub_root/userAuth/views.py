@@ -6,17 +6,17 @@ from .serializers import AclMosquittoSerializer, AuthMosquittoSerializer
 from rest_framework import permissions
 from django.contrib.auth import authenticate
 from rest_framework import generics
+from rest_framework import exceptions
 
-
-class ValidateDataMixin():
+class ValidateDataMixin:
     def get_validated_data(self, request: Request, *args, **kwargs):
-        serializer = self.get_serializer(request.data)
-        serializer.is_valid(raise_exceptions=True)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         return serializer.validated_data
 
 
 # Create your views here.
-class AclMqttView(generics.GenericAPIView, ValidateDataMixin):
+class AclMosquittoView(generics.GenericAPIView, ValidateDataMixin):
     permission_classes = [permissions.AllowAny]
     serializer_class = AclMosquittoSerializer
 
@@ -25,9 +25,12 @@ class AclMqttView(generics.GenericAPIView, ValidateDataMixin):
         if acl_request['topic'] == 'discovery/registration':
             return Response(status=status.HTTP_200_OK)
 
-        user = User.objects.filter(username=acl_request['username']).get(0)
-        device_master = user.device_masters.objects.all().get(0)
-        device = device_master.devices.objects\
+        user_query = User.objects.filter(username=acl_request['username'])
+        if user_query.count() < 1:
+            raise exceptions.NotFound()
+        user = user_query[0]
+        device_master = user.device_masters.all()[0]
+        device = device_master.devices\
             .filter(clientID=acl_request['clientid'])
 
         if device.count() < 1:
@@ -45,7 +48,7 @@ class AclMqttView(generics.GenericAPIView, ValidateDataMixin):
         return Response(status=status.HTTP_403_FORBIDDEN)
 
 
-class AuthMqttView(generics.GenericAPIView, ValidateDataMixin):
+class AuthMosquittoView(generics.GenericAPIView, ValidateDataMixin):
     permission_classes = [permissions.AllowAny]
     serializer_class = AuthMosquittoSerializer
 

@@ -46,7 +46,7 @@ class DeviceNetApiView(generics.GenericAPIView):
         validated_data = serializer.validated_data()
         devices = Device.objects.filter(username=request.user,
                                         wifi_ssid=validated_data['old_wifi_ssid'])
-        if devices.count > 0:
+        if devices.count() > 0:
             for device in devices:
                 get_gateway_factory().get_instance().set_network(
                     device.wifi_ssid, device.local_address,

@@ -19,7 +19,6 @@ from userAuth import serializers as userSerials
 from .interfaces import get_gateway_factory
 
 
-# Create your tests here.
 class TestDeviceView(APITestCase):
     factory = APIRequestFactory()
     view_list = views.DeviceListApiView
