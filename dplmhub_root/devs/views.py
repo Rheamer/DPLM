@@ -132,6 +132,31 @@ class StreamControllerView(generics.GenericAPIView):
 
 class AsyncReadView(AsyncWebsocketConsumer):
     permission_classes = [permissions.IsAuthenticated]
+    async def connect(self):
+        self.loop = asyncio.get_running_loop()
+        self.groupname = "Read"
+        clientID = self.scope['url_route']['kwargs']['clientID']
+        for head in self.scope['headers']:
+            if head[0] == b'endpoint':
+                endpoint = str(head[1])
+        self.stream_name = clientID + endpoint
+        self.gateway = get_gateway_factory().get_instance()
+        await self.accept()
+        # TODO: change to return awaitable read func
+        fread = self.gateway.fread()
+        data = await fread()
+        await self.send(bytes_data=bytes(data))
+        await self.disconnect(0)
+
+
+    async def disconnect(self, close_code):
+        # Leave room group
+        self.gateway.disconnectStream(self.stream_name)
+        await self.channel_layer.group_discard(
+            self.groupname,
+        )
+        await self.close()
+
 
 # TODO: Async view for singular value read
 
@@ -153,10 +178,7 @@ class AsyncStreamViewConsumer(AsyncWebsocketConsumer):
         while (self.gateway.callbackAvailable(endpoint, clientID)):
             if not self.gateway.isEmptyStream(self.stream_name):
                 data = self.gateway.pullStream(self.stream_name)
-                async_to_sync(self.send)(bytes_data=bytes(data))
-                await asyncio.sleep(0.001)
-                print(self.gateway.streamMsgCount(self.stream_name))
-                # print(data)
+                await self.send(bytes_data=bytes(data))
 
     async def disconnect(self, close_code):
         # Leave room group
