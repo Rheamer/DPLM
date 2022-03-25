@@ -1,19 +1,12 @@
-import asyncio
-from cgi import print_directory
-from rest_framework import generics, viewsets, exceptions
+from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
 from rest_framework import permissions
 from django.contrib.auth.models import User
-from .models import Device, Grid, DeviceReadLog
 from .serializers import *
-from .interfaces import get_gateway_factory
-import json
-from asgiref.sync import sync_to_async
-from asgiref.sync import async_to_sync
-from channels.generic.websocket import AsyncWebsocketConsumer
+from dplmhub_root.devs.domain.interfaces import get_gateway_factory
 from decouple import config
 from .utils import action_on_object_validated, FilterableSerializer
 
@@ -129,61 +122,3 @@ class StreamControllerView(generics.GenericAPIView):
             data=config("URL_BROKER_NETWORK"),
             status=status.HTTP_200_OK)
 
-
-class AsyncReadView(AsyncWebsocketConsumer):
-    permission_classes = [permissions.IsAuthenticated]
-    async def connect(self):
-        self.loop = asyncio.get_running_loop()
-        self.groupname = "Read"
-        clientID = self.scope['url_route']['kwargs']['clientID']
-        for head in self.scope['headers']:
-            if head[0] == b'endpoint':
-                endpoint = str(head[1])
-        self.stream_name = clientID + endpoint
-        self.gateway = get_gateway_factory().get_instance()
-        await self.accept()
-        # TODO: change to return awaitable read func
-        fread = self.gateway.fread()
-        data = await fread()
-        await self.send(bytes_data=bytes(data))
-        await self.disconnect(0)
-
-
-    async def disconnect(self, close_code):
-        # Leave room group
-        self.gateway.disconnectStream(self.stream_name)
-        await self.channel_layer.group_discard(
-            self.groupname,
-        )
-        await self.close()
-
-
-# TODO: Async view for singular value read
-
-class AsyncStreamViewConsumer(AsyncWebsocketConsumer):
-    """ Whole view is useless for realtime data broadcast, unless multiprocessed """
-    permission_classes = [permissions.IsAdminUser]
-
-    async def connect(self):
-        self.groupname = "Stream"
-        clientID = self.scope['url_route']['kwargs']['clientID']
-        for head in self.scope['headers']:
-            if head[0] == b'endpoint':
-                endpoint = str(head[1])
-        self.stream_name = clientID + endpoint
-        self.stream_group_name = f'stream_{self.stream_name}'
-        self.gateway = get_gateway_factory().get_instance()
-        await self.accept()
-        self.gateway.connectStream(endpoint, clientID, self.stream_name)
-        while (self.gateway.callbackAvailable(endpoint, clientID)):
-            if not self.gateway.isEmptyStream(self.stream_name):
-                data = self.gateway.pullStream(self.stream_name)
-                await self.send(bytes_data=bytes(data))
-
-    async def disconnect(self, close_code):
-        # Leave room group
-        self.gateway.disconnectStream(self.stream_name)
-        await self.channel_layer.group_discard(
-            self.stream_group_name,
-        )
-        await self.close()

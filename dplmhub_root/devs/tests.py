@@ -15,8 +15,6 @@ from devs import serializers as serials
 from devs import models
 from devs import views
 from userAuth import models as userModels
-from userAuth import serializers as userSerials
-from .interfaces import get_gateway_factory
 
 
 class TestDeviceView(APITestCase):

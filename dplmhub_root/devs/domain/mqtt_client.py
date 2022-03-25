@@ -5,7 +5,7 @@ from typing import List
 from multiprocessing.connection import Client
 from urllib.parse import uses_relative
 import paho.mqtt.client as mqtt
-from .models import Device
+from dplmhub_root.devs.models import Device
 from threading import Lock
 import time
 from threading import Thread
@@ -25,8 +25,6 @@ class MqttClient:
     _server = None
     _callbacks = set()
     _client = None
-    _streams = {str: bytearray}
-    _streams_mutx = {str: Lock}
 
     """ Server side callbacks """
     callback_registration = None
@@ -111,77 +109,33 @@ class MqttClient:
     def dev_put(self, endpoint, deviceID, payload=""):
         self._client.publish(f'action/put/{endpoint}/{deviceID}', payload)
 
-    def dev_read(self, endpoint, deviceID):
+    def dev_read(self, endpoint, clientID):
         # Publish request to get a singular response with a value
 
         def callback_read_close(*args, **kwargs):
-            self.callback_read(deviceID=deviceID, endpoint=endpoint, *args, **kwargs)
+            self.callback_read(deviceID=clientID, endpoint=endpoint, *args, **kwargs)
             self._client.message_callback_remove(
-                f'action/read/{endpoint}/{deviceID}')
+                f'action/read/{endpoint}/{clientID}')
 
         self._client.message_callback_add(
-            f'action/read/{endpoint}/{deviceID}',
+            f'action/read/{endpoint}/{clientID}',
             callback_read_close)
-        self._client.publish(f'action/read/{endpoint}/{deviceID}')
+        self._client.publish(f'action/read/{endpoint}/{clientID}')
 
+    def connect_stream(
+        self,
+        endpoint: str,
+        clientID: str,
+        # TODO: define callable arguments
+        digest_stream: callable
+    ):
+        self._client.message_callback_add(
+            f'action/read/{endpoint}/{clientID}',
+            digest_stream)
 
-
-    """ Stream related methods """
-    def _makeStreamDigestionF(self, stream_name):
-        def __callback_digestStream(client, userdata, msg):
-            self.push_stream(stream_name, msg.payload)
-        return __callback_digestStream
-
-    def push_stream(self, stream_name, data):
-        if stream_name not in self._streams_mutx:
-            self._streams_mutx[stream_name] = Lock()
-
-        self._streams_mutx[stream_name].acquire()
-        try:
-            if stream_name not in self._streams:
-                self._streams[stream_name] = bytearray()
-            self._streams[stream_name] += bytearray(data)
-            print('Push stream ' + stream_name + " " + str(len(data)))
-        finally:
-            self._streams_mutx[stream_name].release()
-
-    def pullStream(self, stream_name):
-        if stream_name not in self._streams:
-            print('Not found stream')
-            return ''
-        self._streams_mutx[stream_name].acquire()
-        try:
-            data = self._streams[stream_name]
-            print('Pull stream ' + stream_name + " " + str(len(data)))
-            self._streams.pop(stream_name)
-        finally:
-            self._streams_mutx[stream_name].release()
-            return data
-
-    def pull_string_stream(self, stream_name):
-        return self.pullStream(stream_name).decode('utf-8')
-
-    def streamMsgCount(self, stream_name):
-        if stream_name not in self._streams:
-            return 0
-        else:
-            return len(self._streams[stream_name])
-
-    def isEmptyStream(self, stream_name):
-        return stream_name not in self._streams or self._streams.get(stream_name) == ''
-
-    def connectStream(self, endpoint, deviceID, stream_name = '########'):
-        if stream_name == '########':
-            stream_name = endpoint + deviceID
-        # print('Subscribing to stream ' + endpoint)
-        self._callbacks.add(f'action/read/{endpoint}/{deviceID}')
-        self._client.subscribe(f'action/read/{endpoint}/{deviceID}')
-        self._client.message_callback_add(f'action/read/{endpoint}/{deviceID}',
-            self._makeStreamDigestionF(stream_name))
-
-    # add deletion of a stream
-    def disconnectStream(self, endpoint, deviceID):
-        self._client.message_callback_remove(f'action/read/{endpoint}/{deviceID}')
-        self._callbacks.remove(f'action/read/{endpoint}/{deviceID}')
-
-
+    def disconnect_stream(
+            self,
+            endpoint: str,
+            clientID: str
+    ):
+        self._client.message_callback_remove(f'action/read/{endpoint}/{clientID}')
