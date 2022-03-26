@@ -1,6 +1,6 @@
-from dplmhub_root.devs.serializers import DeviceSerializer, DeviceActionSerializer
-from dplmhub_root.devs.models import Device
-from dplmhub_root.devs.domain.mqtt_client import MqttClient
+from devs.serializers import DeviceSerializer, DeviceActionSerializer
+from devs.models import Device
+from .mqtt_client import MqttClient
 from abc import ABC, abstractmethod
 
 

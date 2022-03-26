@@ -14,8 +14,10 @@ class DigestionQueue(ABC):
 
 
 class AsyncStream:
-    lock = AioLock()
-    queue = AioQueue()
+
+    def __init__(self):
+        self.lock = AioLock()
+        self.queue = AioQueue()
 
     async def push(self, data):
         await self.queue.put(data)

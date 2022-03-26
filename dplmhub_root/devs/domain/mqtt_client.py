@@ -1,16 +1,7 @@
-from cgi import print_directory
-from http import client
-from pydoc import cli
+
 from typing import List
-from multiprocessing.connection import Client
-from urllib.parse import uses_relative
 import paho.mqtt.client as mqtt
-from dplmhub_root.devs.models import Device
-from threading import Lock
-import time
-from threading import Thread
 from decouple import config
-import threading
 
 mqtt_server_address = config("URL_BROKER_NETWORK")
 broker_port_unsafe = int(config("BROKER_PORT_UNSAFE"))

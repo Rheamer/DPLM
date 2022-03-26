@@ -2,26 +2,28 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 import channels.exceptions as exceptions
 from rest_framework import permissions
-from dplmhub_root.devs.domain.interfaces import get_gateway_factory
+from .domain.interfaces import get_gateway_factory
 from .domain.streams import AsyncStream
 
 
 class AsyncReadView(AsyncWebsocketConsumer):
+
+    def __init__(self):
+        stream = AsyncStream()
+        # TODO: put interface type here
+        self.gateway = get_gateway_factory().get_instance()
+
     permission_classes = [permissions.IsAuthenticated]
-    stream = AsyncStream()
     group_name: str = ''
-    # TODO: put interface type here
-    gateway = None
     clientID: str = ''
     endpoint: str = ''
 
     @staticmethod
-    def get_digestion(stream):
+    def get_digestion(stream, loop):
         # TODO: how do i know these arguments?
         #  need some sort of abstraction to pass functions
         #  to mqtt callback handler
         def digestion(client, userdata, msg):
-            loop = asyncio.get_running_loop()
             task = asyncio.create_task(stream.push(msg))
             asyncio.run_coroutine_threadsafe(task, loop).result()
         return digestion
@@ -34,10 +36,12 @@ class AsyncReadView(AsyncWebsocketConsumer):
         if self.endpoint == '':
             raise exceptions.DenyConnection
         self.group_name = self.clientID + self.endpoint
-        self.gateway = get_gateway_factory().get_instance()
         self.gateway.connectStream(
             self.endpoint, self.clientID,
-            digest_stream=self.get_digestion(self.stream))
+            digest_stream=self.get_digestion(
+                self.stream,
+                asyncio.get_running_loop())
+        )
         await self.accept()
         self.gateway.dev_read(self.endpoint, self.clientID)
         data = await self.stream.read()

@@ -1,7 +1,7 @@
 from . import views
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from dplmhub_root.devs.domain.interfaces import get_gateway_factory
+from .domain.interfaces import get_gateway_factory
 
 gateway_client_factory = get_gateway_factory()
 gateway_client_factory.setup()
@@ -11,7 +11,7 @@ router = DefaultRouter()
 router.register("", views.DeviceActionView, basename='action')
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('action/', include(router.urls)),
     path('list', views.DeviceListApiView.as_view(), name='devices'),
     path('<int:id>', views.DeviceApiView.as_view(), name='detail'),
     path('network', views.DeviceNetApiView.as_view(), name='network'),

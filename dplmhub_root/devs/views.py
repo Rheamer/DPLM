@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework import permissions
 from django.contrib.auth.models import User
 from .serializers import *
-from dplmhub_root.devs.domain.interfaces import get_gateway_factory
+from .domain.interfaces import get_gateway_factory
 from decouple import config
 from .utils import action_on_object_validated, FilterableSerializer
 
