@@ -1,6 +1,6 @@
 # Custom
 *.env
-*dplm_desktop/cpp-httplib/
+
 *.vscode/
 *.idea/
 
