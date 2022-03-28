@@ -1,0 +1,345 @@
+{
+	"info": {
+		"_postman_id": "31cfda84-1473-4516-bef7-7cd21ea02a14",
+		"name": "DPLM",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "ListDevices",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"user-agent": true
+				}
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "default"
+					},
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://$address/devices/list",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"list"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetDevice",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "username",
+							"value": "",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://$address/devices/$id",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"$id"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetToken",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"user-agent": true,
+					"host": true,
+					"content-length": true,
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "password",
+							"value": "$password",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "$username",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://$address/auth/token/login/",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"auth",
+						"token",
+						"login",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateUser",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "DeviceRead",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "clientID",
+							"value": "$clientID",
+							"type": "text"
+						},
+						{
+							"key": "endpoint",
+							"value": "$endpoint",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://$address/devices/action/dev_read/",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"action",
+						"dev_read",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DeviceUpdate",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "clientID",
+							"value": "$clientID",
+							"type": "text"
+						},
+						{
+							"key": "payload",
+							"value": "$payload",
+							"type": "text"
+						},
+						{
+							"key": "endpoint",
+							"value": "$endpoint",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://$address/devices/action/dev_update/",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"action",
+						"dev_update",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DevicePut",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "clientID",
+							"value": "$clientID",
+							"type": "text"
+						},
+						{
+							"key": "payload",
+							"value": "$payload",
+							"type": "text"
+						},
+						{
+							"key": "endpoint",
+							"value": "$endpoint",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://$address/devices/action/dev_update/",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"action",
+						"dev_update",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ListEndpoints",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://$address/devices/endpoints",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"endpoints"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddEndpoint",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "name",
+							"value": "string",
+							"type": "text"
+						},
+						{
+							"key": "io_type",
+							"value": "string",
+							"type": "text"
+						},
+						{
+							"key": "data_type",
+							"value": "string",
+							"type": "text"
+						},
+						{
+							"key": "device",
+							"value": "0",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://$address/devices/endpoints",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"endpoints"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

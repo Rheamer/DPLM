@@ -1,4 +1,4 @@
-#include "usbexplorer.h"
+#include "dplm.h"
 #include "python_utilities.h"
 #include <QApplication>
 #include <QDebug>
