@@ -8,22 +8,35 @@ from django.contrib.auth.models import User
 from .serializers import *
 from .domain.interfaces import get_gateway_factory
 from decouple import config
-from .utils import action_on_object_validated, FilterableSerializer
+from .utils import action_on_object_validated, FilterableSerializer, DeviceQueryMixin
 
 
-class DeviceListApiView(generics.ListCreateAPIView):
+class DeviceListApiView(generics.ListAPIView, DeviceQueryMixin):
     # add permission to check if user is authenticated
     permission_classes = [permissions.IsAuthenticated]
     # 1. List all
-    queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
 
-class DeviceApiView(generics.RetrieveAPIView):
+class DeviceApiView(generics.RetrieveAPIView, DeviceQueryMixin):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DeviceSerializer
     lookup_field = 'id'
-    queryset = Device.objects.all()
+
+
+class EndpointApiView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = EndpointSerializer
+
+    def get_queryset(self):
+        user_query = User.objects \
+            .filter(pk=self.request.user.pk)
+        for user in user_query:
+            devmas_query = user.device_masters.all()
+            for dev in devmas_query:
+                devices = dev.devices.filter(id=int(self.request.GET.get('device_id')))
+                for device in devices:
+                    return device.endpoints.all()
 
 
 class DeviceNetApiView(generics.GenericAPIView):

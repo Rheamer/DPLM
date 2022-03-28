@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Device, Grid, DeviceReadLog
+from .models import Device, Grid, DeviceReadLog, Endpoint
 from .utils import FilterableSerializer
+
 
 
 class DeviceSerializer(serializers.ModelSerializer):
@@ -29,12 +30,15 @@ class DeviceActionSerializer(FilterableSerializer):
     def get_filter_field(self):
         return self.data['clientID']
 
-    # class Meta:
-    #     model = DeviceReadLog
-    #     fields = ['value', 'endpoint', 'clientID']
-
 
 class DeviceReadLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeviceReadLog
         fields = '__all__'
+
+
+class EndpointSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Endpoint
+        fields = '__all__'
+
