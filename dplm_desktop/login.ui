@@ -34,7 +34,7 @@
      <item alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="title">
        <property name="text">
-        <string>Connection to the monitoring system</string>
+        <string>Login</string>
        </property>
       </widget>
      </item>
@@ -133,7 +133,11 @@
    <item>
     <layout class="QGridLayout" name="gridLayout">
      <item row="2" column="1">
-      <widget class="QLineEdit" name="port"/>
+      <widget class="QLineEdit" name="port">
+       <property name="text">
+        <string>8000</string>
+       </property>
+      </widget>
      </item>
      <item row="0" column="1">
       <widget class="QLabel" name="label_2">
@@ -150,7 +154,11 @@
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QLineEdit" name="ip"/>
+      <widget class="QLineEdit" name="ip">
+       <property name="text">
+        <string>127.0.0.1</string>
+       </property>
+      </widget>
      </item>
      <item row="2" column="2">
       <widget class="QPushButton" name="addressIcon">
@@ -185,90 +193,9 @@
    <item alignment="Qt::AlignRight">
     <widget class="QPushButton" name="authBtn">
      <property name="text">
-      <string>Ok</string>
+      <string>Login</string>
      </property>
     </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="label_5">
-     <property name="text">
-      <string>Choose agent:</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QComboBox" name="agentBox"/>
-   </item>
-   <item>
-    <layout class="QGridLayout" name="gridLayout_3">
-     <item row="0" column="2" alignment="Qt::AlignRight">
-      <widget class="QLabel" name="label_6">
-       <property name="text">
-        <string>Create Agent</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <spacer name="horizontalSpacer_4">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="3" column="1">
-      <widget class="QLabel" name="label_9">
-       <property name="text">
-        <string>Operation:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="2">
-      <widget class="QComboBox" name="serverBox"/>
-     </item>
-     <item row="1" column="2">
-      <widget class="QLineEdit" name="newAgentName"/>
-     </item>
-     <item row="2" column="1">
-      <widget class="QLabel" name="label_8">
-       <property name="text">
-        <string>Server:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="2" alignment="Qt::AlignRight">
-      <widget class="QPushButton" name="createAgentBtn">
-       <property name="styleSheet">
-        <string notr="true"/>
-       </property>
-       <property name="text">
-        <string>Create</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLabel" name="label_7">
-       <property name="text">
-        <string>Name:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="2">
-      <widget class="QComboBox" name="operationBox"/>
-     </item>
-     <item row="5" column="2" alignment="Qt::AlignRight">
-      <widget class="QLabel" name="creationStatus">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-    </layout>
    </item>
    <item>
     <spacer name="verticalSpacer">
@@ -282,6 +209,81 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item alignment="Qt::AlignHCenter">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Registration</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="4" column="2" alignment="Qt::AlignRight">
+      <widget class="QLabel" name="creationStatus">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QLineEdit" name="newPassword"/>
+     </item>
+     <item row="1" column="2">
+      <widget class="QLineEdit" name="newEmail">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLineEdit" name="newUsername"/>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="faf">
+       <property name="text">
+        <string>Email</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label_7">
+       <property name="text">
+        <string>Username</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLabel" name="label_9">
+       <property name="text">
+        <string>Password</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2" alignment="Qt::AlignRight">
+      <widget class="QPushButton" name="registerUserBtn">
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>Register</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <spacer name="horizontalSpacer_4">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="btnBox">

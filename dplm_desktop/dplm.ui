@@ -534,7 +534,7 @@
    </palette>
   </property>
   <property name="windowTitle">
-   <string>UsbConnections</string>
+   <string>DPLM-UI</string>
   </property>
   <property name="autoFillBackground">
    <bool>true</bool>
@@ -655,60 +655,6 @@
          <property name="spacing">
           <number>3</number>
          </property>
-         <item row="3" column="3">
-          <widget class="QStackedWidget" name="stackedWidget"/>
-         </item>
-         <item row="3" column="2">
-          <spacer name="horizontalSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>10</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item row="3" column="0">
-          <widget class="QTreeWidget" name="device_tree">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>2</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="sortingEnabled">
-            <bool>true</bool>
-           </property>
-           <column>
-            <property name="text">
-             <string>User</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Client ID</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Local address</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Last update</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Wifi ssid</string>
-            </property>
-           </column>
-          </widget>
-         </item>
          <item row="2" column="0">
           <spacer name="verticalSpacer_2">
            <property name="orientation">
@@ -741,13 +687,62 @@
            </property>
           </spacer>
          </item>
+         <item row="3" column="3">
+          <widget class="QStackedWidget" name="stackedWidget"/>
+         </item>
+         <item row="3" column="2">
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="3" column="1">
+          <widget class="QTreeWidget" name="endpoint_tree">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>2</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <column>
+            <property name="text">
+             <string>Endpoint</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Read value</string>
+            </property>
+           </column>
+          </widget>
+         </item>
          <item row="1" column="0">
           <widget class="QWidget" name="widget" native="true">
            <layout class="QGridLayout" name="gridLayout_4">
-            <item row="0" column="1">
-             <widget class="QLabel" name="login_state">
+            <item row="0" column="4">
+             <widget class="QLineEdit" name="hostName">
               <property name="text">
-               <string>TextLabel</string>
+               <string/>
+              </property>
+              <property name="frame">
+               <bool>false</bool>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QPushButton" name="login_button">
+              <property name="text">
+               <string>Login</string>
               </property>
              </widget>
             </item>
@@ -764,17 +759,10 @@
               </property>
              </spacer>
             </item>
-            <item row="0" column="4">
-             <widget class="QLineEdit" name="hostName">
+            <item row="0" column="1">
+             <widget class="QLabel" name="login_state">
               <property name="text">
-               <string>127.0.0.1:8000</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QPushButton" name="pushButton">
-              <property name="text">
-               <string>Login</string>
+               <string/>
               </property>
              </widget>
             </item>
@@ -785,19 +773,51 @@
               </property>
              </widget>
             </item>
+            <item row="0" column="5">
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
           </widget>
          </item>
-         <item row="3" column="1">
-          <widget class="QTreeWidget" name="endpoint_tree">
+         <item row="3" column="0">
+          <widget class="QTreeWidget" name="device_tree">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Ignored" vsizetype="Expanding">
+             <horstretch>2</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
            <column>
             <property name="text">
-             <string>Endpoint</string>
+             <string>Client ID</string>
             </property>
            </column>
            <column>
             <property name="text">
-             <string>Read value</string>
+             <string>Local address</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Last update</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Wifi ssid</string>
             </property>
            </column>
           </widget>

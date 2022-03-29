@@ -44,6 +44,7 @@ set(PROJECT_SOURCES
     login.ui
     httpRequest.hpp httpRequest.cpp
     main.cpp
+    web_client.hpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

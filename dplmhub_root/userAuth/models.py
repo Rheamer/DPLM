@@ -9,5 +9,5 @@ class DeviceMaster(models.Model):
     can_write = models.BooleanField(default=False)
     can_subscribe = models.BooleanField(default=False)
     def __str__(self):
-        return self.user
+        return str(self.user)
 

@@ -3,7 +3,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-
+#include <iostream>
 
 std::string rawRequest(const std::string &resourceAddress,
                        const std::multimap<std::string, std::string> &headers)
@@ -25,8 +25,7 @@ RequestResult executeRequest(const std::string &resourceAddress,
                              const std::multimap<std::string, std::string> &headers,
                              const std::string &method,
                              const std::string &body,
-                             const std::string &cookie,
-                             const std::string &contentType)
+                             const std::string &cookie)
 {
     RequestResult requestResult;
     std::string domain, address;
@@ -42,14 +41,16 @@ RequestResult executeRequest(const std::string &resourceAddress,
         if (res.error() != httplib::Error::Success) {
             requestResult.resultString = httplib::to_string(res.error());
             requestResult.responseCode = 0;
+            std::cout << requestResult.resultString << '\n' << resourceAddress <<'\n';
             return requestResult;
         }
         reply = res.value();
     } else if (method == "POST") {
-        auto res = req.Post(address.c_str(), header, body, contentType.c_str());
+        auto res = req.Post(address.c_str(), header, body, "application/json");
         if (res.error() != httplib::Error::Success) {
             requestResult.resultString = httplib::to_string(res.error());
             requestResult.responseCode = 0;
+            std::cout << requestResult.resultString << '\n' << resourceAddress <<'\n';
             return requestResult;
         }
         reply = res.value();
@@ -60,6 +61,10 @@ RequestResult executeRequest(const std::string &resourceAddress,
         for (auto& pair : reply.headers)
             requestResult.headerFields[pair.first].push_back(pair.second);
     } else {
+        std::cout << reply.reason;
+        std::cout << reply.status;
+        std::cout << reply.body << '\n';
+        std::cout << "Original body: " << body << '\n';
         requestResult.responseCode = reply.status;
         requestResult.resultString = reply.reason;
     }

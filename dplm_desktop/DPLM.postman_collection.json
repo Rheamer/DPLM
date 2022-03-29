@@ -84,27 +84,20 @@
 				"disabledSystemHeaders": {
 					"user-agent": true,
 					"host": true,
-					"content-length": true,
-					"content-type": true
+					"content-length": true
 				}
 			},
 			"request": {
 				"method": "POST",
 				"header": [],
 				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "password",
-							"value": "$password",
-							"type": "text"
-						},
-						{
-							"key": "username",
-							"value": "$username",
-							"type": "text"
+					"mode": "raw",
+					"raw": "{\r\n    \"password\": \"$password\",\r\n    \"username\": \"$username\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
 						}
-					]
+					}
 				},
 				"url": {
 					"raw": "http://$address/auth/token/login/",
@@ -142,19 +135,13 @@
 					}
 				],
 				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "clientID",
-							"value": "$clientID",
-							"type": "text"
-						},
-						{
-							"key": "endpoint",
-							"value": "$endpoint",
-							"type": "text"
+					"mode": "raw",
+					"raw": "{\r\n    \"clientID\":\"$clientID\",\r\n    \"endpoint\":\"$endpoint\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
 						}
-					]
+					}
 				},
 				"url": {
 					"raw": "http://$address/devices/action/dev_read/",
@@ -184,24 +171,13 @@
 					}
 				],
 				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "clientID",
-							"value": "$clientID",
-							"type": "text"
-						},
-						{
-							"key": "payload",
-							"value": "$payload",
-							"type": "text"
-						},
-						{
-							"key": "endpoint",
-							"value": "$endpoint",
-							"type": "text"
+					"mode": "raw",
+					"raw": "{\r\n    \"clientID\":\"$clientID\",\r\n    \"endpoint\":\"$endpoint\",\r\n    \"payload\":\"$payload\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
 						}
-					]
+					}
 				},
 				"url": {
 					"raw": "http://$address/devices/action/dev_update/",
@@ -231,24 +207,13 @@
 					}
 				],
 				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "clientID",
-							"value": "$clientID",
-							"type": "text"
-						},
-						{
-							"key": "payload",
-							"value": "$payload",
-							"type": "text"
-						},
-						{
-							"key": "endpoint",
-							"value": "$endpoint",
-							"type": "text"
+					"mode": "raw",
+					"raw": "{\r\n    \"clientID\":\"$clientID\",\r\n    \"endpoint\":\"$endpoint\",\r\n    \"payload\":\"$payload\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
 						}
-					]
+					}
 				},
 				"url": {
 					"raw": "http://$address/devices/action/dev_update/",
@@ -278,14 +243,15 @@
 					}
 				],
 				"url": {
-					"raw": "http://$address/devices/endpoints",
+					"raw": "http://$address/devices/endpoints/$client_id",
 					"protocol": "http",
 					"host": [
 						"$address"
 					],
 					"path": [
 						"devices",
-						"endpoints"
+						"endpoints",
+						"$client_id"
 					]
 				}
 			},
@@ -303,29 +269,13 @@
 					}
 				],
 				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "name",
-							"value": "string",
-							"type": "text"
-						},
-						{
-							"key": "io_type",
-							"value": "string",
-							"type": "text"
-						},
-						{
-							"key": "data_type",
-							"value": "string",
-							"type": "text"
-						},
-						{
-							"key": "device",
-							"value": "0",
-							"type": "text"
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"$name\",\r\n    \"io_type\":\"$stio_typeing\",\r\n    \"data_type\":\"$data_type\",\r\n    \"device\":\"$device\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
 						}
-					]
+					}
 				},
 				"url": {
 					"raw": "http://$address/devices/endpoints",

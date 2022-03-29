@@ -50,8 +50,7 @@ RequestResult executeRequest(
     const std::multimap<std::string, std::string>& headers,
     const std::string& method,
     const std::string& body = "",
-    const std::string& cookie = "",
-    const std::string& contentType = "");
+    const std::string& cookie = "");
 
 
 std::string rawRequest(

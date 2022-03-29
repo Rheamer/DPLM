@@ -16,6 +16,6 @@ urlpatterns = [
     path('<int:id>', views.DeviceApiView.as_view(), name='detail'),
     path('network', views.DeviceNetApiView.as_view(), name='network'),
     path('grids', views.GridListView.as_view(), name='grids'),
-    path('endpoints/<int:device_id>', views.EndpointApiView.as_view(), name='endpoints')
+    path('endpoints/<int:client_id>', views.EndpointApiView.as_view(), name='endpoints')
 ]
 

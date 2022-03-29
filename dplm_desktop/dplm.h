@@ -7,6 +7,7 @@
 #include <QThread>
 #include <QTreeWidget>
 #include <unordered_set>
+#include "web_client.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -27,14 +28,18 @@ private:
     void listDevices();
     int lastClickedDevice = 0;
     std::string authToken;
-
+    WebClientInterface web;
     void setupTree();
 Q_SIGNALS:
     void closing();
+    void gotListing(QJsonDocument body);
+    void gotEndpoints(QJsonDocument body);
+    void gotDeviceRead(QTreeWidgetItem* item, std::string resultString);
 
 private Q_SLOTS:
     void endpointClicked(QTreeWidgetItem *item, int column);
     void itemClicked(QTreeWidgetItem *item, int column);
+    void loginClicked();
 };
 
 #endif // USBCONNECTIONS_H

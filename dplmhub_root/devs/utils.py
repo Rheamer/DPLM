@@ -19,17 +19,6 @@ def custom_exception_handler(exc, context):
 class DeviceException(APIException):
     pass
 
-
-class DeviceQueryMixin:
-    def get_queryset(self):
-        user_query = User.objects \
-            .filter(pk=self.request.user.pk)
-        for user in user_query:
-            devmas_query = user.device_masters.all()
-            for dev in devmas_query:
-                return dev.devices.all()
-
-
 class FilterableSerializer(serializers.Serializer):
 
     @abstractmethod
