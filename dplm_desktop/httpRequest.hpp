@@ -15,7 +15,6 @@
 #include <filesystem>
 
 
-//TODO: move else to namespace and change 10000 intances in extraction
 namespace http {
 
 struct RequestForm {

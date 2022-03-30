@@ -1,4 +1,4 @@
-
+import functools
 from typing import List
 import paho.mqtt.client as mqtt
 from decouple import config
@@ -63,6 +63,14 @@ class MqttClient:
     def parsarg(args: List[str]):
         return ':'.join(args)
 
+    def post_callback_remove(topic, client):
+        def inner(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                func(*args, **kwargs)
+                client.
+
+
     """ Public methods """
     def connect(self):
         self._client = mqtt.Client(client_id = config("DJANGO_MQTT_CLIENT_ID"))
@@ -83,15 +91,12 @@ class MqttClient:
         self._client.loop_start()
 
     def set_network(self, old_ssid: str, old_address: str, ssid: str, password: str):
-        """
-        Old ssid and address are identifiers for a group of devices that need to be reassigned
-        """
+        self._client.message_callback_add(
+            "config/net/status/"+self.parsarg([old_ssid,old_address]),
+        )
         self._client.publish(
             "config/net/" + self.parsarg([old_ssid,old_address]),
             self.parsarg([ssid, password]))
-
-    def callbackAvailable(self, endpoint, deviceID):
-        return f'action/read/{endpoint}/{deviceID}' in self._callbacks
 
     """ Action methods """
     def dev_update(self, endpoint, deviceID, payload=""):
