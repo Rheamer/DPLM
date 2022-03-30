@@ -31,8 +31,16 @@ def callback_read(client, userdata, msg, deviceID, endpoint):
 
 
 # TODO: define callbacks
-def callback_status_network(client, userdata, msg):
-    pass
+def callback_status_network(
+        clientID, newSsid, oldSsid,
+        client, userdata, msg):
+    device = Device.objects.filter(clientID=clientID).first()
+    if device is not None:
+        if msg.payload == '1':
+            device.wifi_ssid = newSsid
+        elif msg.payload == '0':
+            device.wifi_ssid = oldSsid
+        device.save()
 
 
 def callback_deviceAAD(client, userdata, msg):

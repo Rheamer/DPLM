@@ -7,7 +7,6 @@ from .domain.streams import AsyncStream
 
 
 class AsyncReadView(AsyncWebsocketConsumer):
-
     def __init__(self):
         stream = AsyncStream()
         # TODO: put interface type here

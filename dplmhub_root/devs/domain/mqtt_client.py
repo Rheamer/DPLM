@@ -42,12 +42,6 @@ class MqttClient:
         self._client.message_callback_add(
             'discovery/registration/#',
             self.callback_registration)
-        self._client.message_callback_add(
-            'config/net/status/#',
-            self.callback_status_network)
-        self._client.message_callback_add(
-            'discovery/aad',
-            self.callback_deviceAAD)
 
     # The callback for when a PUBLISH message is received from the server.
     @staticmethod
@@ -62,13 +56,6 @@ class MqttClient:
     @staticmethod
     def parsarg(args: List[str]):
         return ':'.join(args)
-
-    def post_callback_remove(topic, client):
-        def inner(func):
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                func(*args, **kwargs)
-                client.
 
 
     """ Public methods """
@@ -90,12 +77,24 @@ class MqttClient:
             self._client.loop()
         self._client.loop_start()
 
-    def set_network(self, old_ssid: str, old_address: str, ssid: str, password: str):
+    def set_network(
+        self, clientID,
+        old_ssid: str,
+        old_address: str,
+        ssid: str,
+        password: str
+    ):
+        def callback_switch_close(*args, **kwargs):
+            self.callback_status_network(clientID, ssid, old_ssid, *args, **kwargs)
+            self._client.message_callback_remove(
+                "config/net/status/"+self.parsarg([old_ssid, old_address]))
+
         self._client.message_callback_add(
-            "config/net/status/"+self.parsarg([old_ssid,old_address]),
+            "config/net/status/"+self.parsarg([old_ssid, old_address]),
+            callback_switch_close
         )
         self._client.publish(
-            "config/net/" + self.parsarg([old_ssid,old_address]),
+            "config/net/" + self.parsarg([old_ssid, old_address]),
             self.parsarg([ssid, password]))
 
     """ Action methods """

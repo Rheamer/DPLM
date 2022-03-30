@@ -70,7 +70,10 @@ class DeviceNetApiView(generics.GenericAPIView):
                                         wifi_ssid=validated_data['old_wifi_ssid'])
         if devices.count() > 0:
             for device in devices:
+                device.wifi_ssid = ''
+                device.save()
                 get_gateway_factory().get_instance().set_network(
+                    device.clientID,
                     device.wifi_ssid, device.local_address,
                     validated_data['wifi_ssid'], validated_data['wifi_pass'])
                 # we need to send it once, and for every device value will be changed
