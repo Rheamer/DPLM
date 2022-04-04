@@ -149,6 +149,7 @@ class GridListView(generics.ListCreateAPIView):
 
 class StreamControllerView(generics.GenericAPIView):
     """ Returns url to broker network """
+    # TODO: serializer for response [URL, PORT]
     def get(self, request: Request, *args, **kwargs):
         return Response(
             data=config("URL_BROKER_NETWORK"),

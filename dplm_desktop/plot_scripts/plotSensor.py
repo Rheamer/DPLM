@@ -99,6 +99,6 @@ class MqttStreamPlotter:
         plt.show()
 
 
-def execute(clientID, username, password, topic, url, port):
+def execute(username, password, clientID, topic, url, port):
     plotter = MqttStreamPlotter(clientID, username, password)
     plotter.plot(topic, url, port)

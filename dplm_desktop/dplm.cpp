@@ -1,12 +1,15 @@
 #include "./ui_dplm.h"
+#include "dplm.h"
 
 #include "dplm.h"
 #include <QPushButton>
 #include <string>
 #include "httpRequest.hpp"
+#include "python_utilities.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QMenu>
 
 Dplm::Dplm(
         Ui::Dplm* ui_,
@@ -19,15 +22,20 @@ Dplm::Dplm(
         this, &Dplm::itemClicked);
     connect(ui->endpoint_tree, &QTreeWidget::itemDoubleClicked,
         this, &Dplm::endpointClicked);
+
+    this->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->endpoint_tree, &QTreeWidget::customContextMenuRequested,
+        this, &Dplm::endpointRightClicked);
     connect(ui->login_button, &QPushButton::released,
         this, &Dplm::loginClicked);
+
     connect(&this->web, &WebClientInterface::accepted,
         this, [=](std::string username,
                   std::string ip,
                   std::string port,
                   std::string token) {
             this->authToken = token;
-            ui->hostName->setText(ip.c_str());
+            ui->hostName->setText(ip.c_str());  
             if (port != ""){
                 ui->hostName->setText((ip+':'+port).c_str());
             }
@@ -65,7 +73,6 @@ Dplm::Dplm(
             this, [=](QTreeWidgetItem* item, std::string resString){
             item->setText(1, resString.c_str());
     });
-
 }
 
 Dplm::~Dplm()
@@ -75,6 +82,39 @@ Dplm::~Dplm()
 
 std::string str(QString const& qstr){
     return qstr.toStdString();
+}
+
+void Dplm::endpointRightClicked(const QPoint& pos){
+    QTreeWidget *tree = ui->endpoint_tree;
+    QTreeWidgetItem *nd = tree->itemAt(pos);
+
+    QAction *plotAct = new QAction("Plot stream", this);
+    plotAct->setStatusTip("Real time data plot");
+    connect(plotAct, &QAction::triggered,
+            this, &Dplm::callPlotProcedure);
+    QMenu menu(this);
+    menu.addAction(plotAct);
+    menu.exec( tree->mapToGlobal(pos) );
+}
+
+void Dplm::callPlotProcedure(){
+    PyUtils py;
+    std::string argString;
+    auto connection_vars = this->web.getAccessVariables();
+    argString.append(connection_vars["username"] + ' ');
+    argString.append(connection_vars["password"] + ' ');
+    std::string clientID = ui->device_tree
+            ->topLevelItem(this->lastClickedDevice)
+            ->text(0).toStdString();
+    argString.append(clientID + ' ');
+    std::string topic = "action/read/stream/" + clientID;
+    argString.append(topic + ' ');
+    // TODO: get it from server!
+    argString.append(this->broker_url + ' ');
+    argString.append(this->broker_port);
+    py.strFunc("plot_scripts/plotSensor.py",
+               "execute",
+               argString);
 }
 
 void Dplm::loginClicked(){

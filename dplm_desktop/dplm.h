@@ -25,6 +25,9 @@ public:
 
 private:
     Ui::Dplm *ui;
+    // TODO: get it from server!
+    std::string broker_url = "dff8we.stackhero-network.com";
+    std::string broker_port = "1883";
     void listDevices();
     int lastClickedDevice = 0;
     std::string authToken;
@@ -40,6 +43,8 @@ private Q_SLOTS:
     void endpointClicked(QTreeWidgetItem *item, int column);
     void itemClicked(QTreeWidgetItem *item, int column);
     void loginClicked();
+    void endpointRightClicked(const QPoint &pos);
+    void callPlotProcedure();
 };
 
 #endif // USBCONNECTIONS_H

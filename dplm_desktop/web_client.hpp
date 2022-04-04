@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QPushButton>
 #include <string>
+#include <map>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -141,6 +142,16 @@ public:
         uiPopup->authIcon->setIcon(QIcon());
         uiPopup->addressIcon->setIcon(QIcon());
         loginPopup->exec();
+    }
+
+    std::map<std::string, std::string> getAccessVariables()
+    {
+        std::map<std::string, std::string> retdict;
+        retdict["username"] = this->webLoginEntered;
+        retdict["password"] = this->webPassEntered;
+        retdict["url"] = this->webIpEntered;
+        retdict["port"] = this->webPortEntered;
+        return retdict;
     }
 
 };
