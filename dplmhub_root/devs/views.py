@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework import permissions
 from django.contrib.auth.models import User
 from .serializers import *
-from .domain.interfaces import get_gateway_factory
+from .domain.interfaces import get_mqttgate_factory
 from decouple import config
 from .utils import action_on_object_validated, FilterableSerializer
 
@@ -72,7 +72,7 @@ class DeviceNetApiView(generics.GenericAPIView):
             for device in devices:
                 device.wifi_ssid = ''
                 device.save()
-                get_gateway_factory().get_instance().set_network(
+                get_mqttgate_factory().get_instance().set_network(
                     device.clientID,
                     device.wifi_ssid, device.local_address,
                     validated_data['wifi_ssid'], validated_data['wifi_pass'])
@@ -103,7 +103,7 @@ class DeviceActionView(viewsets.GenericViewSet):
     @action_on_object_validated(Device)
     def dev_read(self, data):
         """ Returns last received reading, published request for a new one """
-        get_gateway_factory()\
+        get_mqttgate_factory()\
             .get_instance()\
             .dev_read(data['endpoint'],
                       data['clientID'])
@@ -117,7 +117,7 @@ class DeviceActionView(viewsets.GenericViewSet):
     @action(["post"], detail=False)
     @action_on_object_validated(Device)
     def dev_put(self, data):
-        get_gateway_factory()\
+        get_mqttgate_factory()\
             .get_instance()\
             .dev_put(data['endpoint'],
                      data['clientID'],
@@ -126,7 +126,7 @@ class DeviceActionView(viewsets.GenericViewSet):
     @action(["put"], detail=False)
     @action_on_object_validated(Device)
     def dev_update(self, data):
-        get_gateway_factory()\
+        get_mqttgate_factory()\
             .get_instance()\
             .dev_update(data['endpoint'],
                         data['clientID'],

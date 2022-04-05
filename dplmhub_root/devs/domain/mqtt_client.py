@@ -14,14 +14,18 @@ class MqttClient:
     Singleton running next to django server
     """
     _server = None
-    _callbacks = set()
     _client = None
 
     """ Server side callbacks """
-    callback_registration = None
-    callback_read = None
-    callback_status_network = None
-    callback_deviceAAD = None
+    @staticmethod
+    def dummy_callback(*args, **kwargs):
+        raise RuntimeError('Callback unimplemented!')
+    callbacks: [str, callable] = {
+        'registration': dummy_callback,
+        'read': dummy_callback,
+        'status_network': dummy_callback,
+        'callback_deviceAAD': dummy_callback,
+    }
 
     def __init__(self):
         raise RuntimeError('Call getInstance() instead')
@@ -39,9 +43,9 @@ class MqttClient:
         # _client.subscribe("$SYS/#")
     
     def __setup_callbacks(self):
-        self._client.message_callback_add(
-            'discovery/registration/#',
-            self.callback_registration)
+        self._add_callback(
+            'discovery/registration',
+            self.callbacks['registration'])
 
     # The callback for when a PUBLISH message is received from the server.
     @staticmethod
@@ -57,15 +61,18 @@ class MqttClient:
     def parsarg(args: List[str]):
         return ':'.join(args)
 
+    def _add_callback(self, topic: str, callback: callable):
+        self._client.subscribe(topic)
+        self._client.message_callback_add(topic, callback)
+
+    def _remove_callback(self, topic: str):
+        self._client.unsubscribe(topic)
+        self._client.message_callback_remove(topic)
 
     """ Public methods """
     def connect(self):
-        self._client = mqtt.Client(client_id = config("DJANGO_MQTT_CLIENT_ID"))
+        self._client = mqtt.Client(client_id=config("DJANGO_MQTT_CLIENT_ID"))
         self._client.enable_logger()
-        self._client.on_connect = self.__on_connect
-        self._client.on_message = self.__on_message
-        self._client.on_disconnect = self.__on_disconnect
-        self.__setup_callbacks()
 
         self._client.username_pw_set(
             config("DJANGO_MQTT_USERNAME"),
@@ -75,6 +82,11 @@ class MqttClient:
         while not self._client.is_connected():
             self._client.connect(mqtt_server_address, broker_port_unsafe, 60)
             self._client.loop()
+
+        self._client.on_connect = self.__on_connect
+        self._client.on_message = self.__on_message
+        self._client.on_disconnect = self.__on_disconnect
+        self.__setup_callbacks()
         self._client.loop_start()
 
     def set_network(
@@ -84,12 +96,16 @@ class MqttClient:
         ssid: str,
         password: str
     ):
-        def callback_switch_close(*args, **kwargs):
-            self.callback_status_network(clientID, ssid, old_ssid, *args, **kwargs)
-            self._client.message_callback_remove(
+        def callback_switch_close(*args):
+            self.callbacks['status_network'](
+                *args,
+                clientID=clientID,
+                new_ssid=ssid,
+                old_ssid=old_ssid)
+            self._remove_callback(
                 "config/net/status/"+self.parsarg([old_ssid, old_address]))
 
-        self._client.message_callback_add(
+        self._add_callback(
             "config/net/status/"+self.parsarg([old_ssid, old_address]),
             callback_switch_close
         )
@@ -108,11 +124,11 @@ class MqttClient:
         # Publish request to get a singular response with a value
 
         def callback_read_close(*args, **kwargs):
-            self.callback_read(deviceID=clientID, endpoint=endpoint, *args, **kwargs)
-            self._client.message_callback_remove(
+            self.callbacks['read'](*args, deviceID=clientID, endpoint=endpoint)
+            self._remove_callback(
                 f'action/read/{endpoint}/{clientID}')
 
-        self._client.message_callback_add(
+        self._add_callback(
             f'action/read/{endpoint}/{clientID}',
             callback_read_close)
         self._client.publish(f'action/read/{endpoint}/{clientID}')
@@ -124,7 +140,7 @@ class MqttClient:
         # TODO: define callable arguments
         digest_stream: callable
     ):
-        self._client.message_callback_add(
+        self._add_callback(
             f'action/read/{endpoint}/{clientID}',
             digest_stream)
 
@@ -133,4 +149,4 @@ class MqttClient:
             endpoint: str,
             clientID: str
     ):
-        self._client.message_callback_remove(f'action/read/{endpoint}/{clientID}')
+        self._remove_callback(f'action/read/{endpoint}/{clientID}')

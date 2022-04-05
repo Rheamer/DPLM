@@ -2,7 +2,7 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 import channels.exceptions as exceptions
 from rest_framework import permissions
-from .domain.interfaces import get_gateway_factory
+from .domain.interfaces import get_mqttgate_factory
 from .domain.streams import AsyncStream
 
 
@@ -10,7 +10,7 @@ class AsyncReadView(AsyncWebsocketConsumer):
     def __init__(self):
         stream = AsyncStream()
         # TODO: put interface type here
-        self.gateway = get_gateway_factory().get_instance()
+        self.gateway = get_mqttgate_factory().get_instance()
 
     permission_classes = [permissions.IsAuthenticated]
     group_name: str = ''
@@ -69,7 +69,7 @@ class AsyncStreamViewConsumer(AsyncWebsocketConsumer):
                 endpoint = str(head[1])
         self.stream_name = clientID + endpoint
         self.stream_group_name = f'stream_{self.stream_name}'
-        self.gateway = get_gateway_factory().get_instance()
+        self.gateway = get_mqttgate_factory().get_instance()
         await self.accept()
         self.gateway.connectStream(endpoint, clientID, self.stream_name)
         while (self.gateway.callbackAvailable(endpoint, clientID)):

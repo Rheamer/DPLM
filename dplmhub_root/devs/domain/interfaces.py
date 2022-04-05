@@ -2,49 +2,8 @@ from devs.serializers import DeviceSerializer, DeviceActionSerializer
 from devs.models import Device
 from .mqtt_client import MqttClient
 from abc import ABC, abstractmethod
-
-
-def callback_registration(client, userdata, msg):
-    print("MQTT endpoint received: " + msg.topic)
-    # remember dev [clientID, user, local_address, last_update_date]
-    attributes = msg.payload.decode('utf-8').split(':')
-    data = {
-        'clientID': attributes[0],
-        'user': attributes[1],
-        'local_address': attributes[2],
-    }
-    serializer = DeviceSerializer(data=data)
-    if serializer.is_valid():
-        serializer.save()
-
-
-def callback_read(client, userdata, msg, deviceID, endpoint):
-    serializer = DeviceActionSerializer(data={
-        'value': msg.payload,
-        'endpoint': endpoint}
-    )
-    if serializer.is_valid():
-        obj = serializer.instance
-        query = Device.objects.filter(clientID=deviceID)
-        obj.device = query.get(0).id
-        obj.save()
-
-
-# TODO: define callbacks
-def callback_status_network(
-        clientID, newSsid, oldSsid,
-        client, userdata, msg):
-    device = Device.objects.filter(clientID=clientID).first()
-    if device is not None:
-        if msg.payload == '1':
-            device.wifi_ssid = newSsid
-        elif msg.payload == '0':
-            device.wifi_ssid = oldSsid
-        device.save()
-
-
-def callback_deviceAAD(client, userdata, msg):
-    pass
+from userAuth.models import DeviceMaster
+from django.contrib.auth.models import User
 
 # interface for gateway client instance, to switch out mqtt and coap for example
 # TODO: create gateway client interface, gateway's factory get_instance should
@@ -57,7 +16,7 @@ class GatewayFactory(ABC):
     _gateway_client = None
 
     @abstractmethod
-    def setup(self) -> None:
+    def _setup(self) -> None:
         pass
 
 # TODO: change return type to interface
@@ -70,12 +29,61 @@ class GatewayFactory(ABC):
 class MqttGatewayFactory(GatewayFactory):
     _gateway_client = MqttClient
 
-    def setup(self) -> None:
-        self._gateway_client.callback_registration = callback_registration
-        self._gateway_client.callback_read = callback_read
-        self._gateway_client.callback_status_network = callback_status_network
-        self._gateway_client.callback_deviceAAD = callback_deviceAAD
+    def __init__(self):
+        self._setup()
 
+    def _setup(self) -> None:
+        self._gateway_client.callbacks['registration'] = self.callback_registration
+        self._gateway_client.callbacks['read'] = self.callback_read
+        self._gateway_client.callbacks['status_network'] = self.callback_status_network
+        self._gateway_client.callbacks['deviceAAD'] = self.callback_deviceAAD
 
-def get_gateway_factory() -> GatewayFactory:
-    return MqttGatewayFactory()
+    @staticmethod
+    def callback_registration(client, user_data, msg):
+        print("MQTT endpoint received: " + msg.topic)
+        # remember dev [clientID, user, local_address, last_update_date]
+        attributes = msg.payload.decode('utf-8').split(':')
+        device_master = User.objects.filter(username=attributes[1]).first()\
+            .device_masters.all().first()
+        data = {
+            'clientID': attributes[0],
+            'user': device_master.id,
+            'local_address': attributes[2],
+        }
+        serializer = DeviceSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+    @staticmethod
+    def callback_read(client, userdata, msg, deviceID, endpoint):
+        serializer = DeviceActionSerializer(data={
+            'value': msg.payload,
+            'endpoint': endpoint}
+        )
+        if serializer.is_valid():
+            obj = serializer.instance
+            query = Device.objects.filter(clientID=deviceID)
+            obj.device = query.get(0).id
+            obj.save()
+
+    # TODO: define callbacks
+    @staticmethod
+    def callback_status_network(
+            client, userdata, msg,
+            clientID, new_ssid, old_ssid
+            ):
+        device = Device.objects.filter(clientID=clientID).first()
+        if device is not None:
+            if msg.payload == '1':
+                device.wifi_ssid = new_ssid
+            elif msg.payload == '0':
+                device.wifi_ssid = old_ssid
+            device.save()
+
+    @staticmethod
+    def callback_deviceAAD(client, userdata, msg):
+        pass
+
+def get_mqttgate_factory() -> GatewayFactory:
+    gate = MqttGatewayFactory()
+    return gate

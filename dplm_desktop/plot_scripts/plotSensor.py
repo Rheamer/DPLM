@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.figure as fig
 from matplotlib.animation import FuncAnimation, TimedAnimation
 from matplotlib.lines import Line2D
-
 import numpy as np, collections
 
 
@@ -100,5 +99,8 @@ class MqttStreamPlotter:
 
 
 def execute(username, password, clientID, topic, url, port):
-    plotter = MqttStreamPlotter(clientID, username, password)
-    plotter.plot(topic, url, port)
+    def run(username, password, clientID, topic, url, port):
+        plotter = MqttStreamPlotter(clientID, username, password)
+        plotter.plot(topic, url, port)
+    Process(target=run, args=(username, password, clientID, topic, url, port)).run()
+
