@@ -9,7 +9,7 @@ from .serializers import *
 from .domain.interfaces import get_mqttgate_factory
 from decouple import config
 from .utils import action_on_object_validated, FilterableSerializer
-
+import json
 
 class DeviceListApiView(generics.ListCreateAPIView):
     # add permission to check if user is authenticated
@@ -149,9 +149,11 @@ class GridListView(generics.ListCreateAPIView):
 
 class StreamControllerView(generics.GenericAPIView):
     """ Returns url to broker network """
-    # TODO: serializer for response [URL, PORT]
     def get(self, request: Request, *args, **kwargs):
+        url = config("URL_BROKER_NETWORK")
+        port = config("BROKER_PORT_TLS")
+        data = json.dumps((url, port))
         return Response(
-            data=config("URL_BROKER_NETWORK"),
+            data = str(data),
             status=status.HTTP_200_OK)
 
