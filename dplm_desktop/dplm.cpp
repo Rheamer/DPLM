@@ -5,11 +5,11 @@
 #include <QPushButton>
 #include <string>
 #include "httpRequest.hpp"
-#include "python_utilities.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QMenu>
+#include <thread>
 
 Dplm::Dplm(
         Ui::Dplm* ui_,
@@ -23,7 +23,7 @@ Dplm::Dplm(
     connect(ui->endpoint_tree, &QTreeWidget::itemDoubleClicked,
         this, &Dplm::endpointClicked);
 
-    this->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->endpoint_tree->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->endpoint_tree, &QTreeWidget::customContextMenuRequested,
         this, &Dplm::endpointRightClicked);
     connect(ui->login_button, &QPushButton::released,
@@ -65,7 +65,7 @@ Dplm::Dplm(
             auto endpoint = dict.toObject();
             QTreeWidgetItem* item = new QTreeWidgetItem();
             item->setText(0, endpoint.find("name").value().toString());
-            item->setData(0, Qt::UserRole + 1, QVariant(this->lastClickedDevice));
+            item->setData(0, Qt::UserRole + 1, QVariant(this->lastClickedClientIndex));
             ui->endpoint_tree->addTopLevelItem(item);
         }
     });
@@ -87,7 +87,10 @@ std::string str(QString const& qstr){
 void Dplm::endpointRightClicked(const QPoint& pos){
     QTreeWidget *tree = ui->endpoint_tree;
     QTreeWidgetItem *nd = tree->itemAt(pos);
-
+    this->clientIDForStream = ui->device_tree
+            ->topLevelItem(nd->data(0, Qt::UserRole + 1).toInt())
+            ->text(0).toStdString();
+    this->endpointForStream = nd->text(0).toStdString();
     QAction *plotAct = new QAction("Plot stream", this);
     plotAct->setStatusTip("Real time data plot");
     connect(plotAct, &QAction::triggered,
@@ -98,23 +101,23 @@ void Dplm::endpointRightClicked(const QPoint& pos){
 }
 
 void Dplm::callPlotProcedure(){
-    PyUtils py;
     std::string argString;
     auto connection_vars = this->web.getAccessVariables();
     argString.append(connection_vars["username"] + ' ');
     argString.append(connection_vars["password"] + ' ');
-    std::string clientID = ui->device_tree
-            ->topLevelItem(this->lastClickedDevice)
-            ->text(0).toStdString();
-    argString.append(clientID + ' ');
-    std::string topic = "action/read/stream/" + clientID;
-    argString.append(topic + ' ');
+    argString.append(this->clientIDForStream + ' ');
+    argString.append(this->endpointForStream + ' ');
     // TODO: get it from server!
     argString.append(this->broker_url + ' ');
     argString.append(this->broker_port);
-    py.strFunc("plot_scripts/plotSensor.py",
-               "execute",
-               argString);
+    std::cout << argString << '\n';
+    this->py.strFunc("plotSensor.py");
+    const auto f = [=](){
+        this->py.strFunc("plotSensor",
+                   "execute",
+                   argString);
+    };
+    std::thread(f).detach();
 }
 
 void Dplm::loginClicked(){
@@ -154,7 +157,7 @@ void Dplm::itemClicked(QTreeWidgetItem* item, int column)
     if (item->childCount() > 0)
         return;
     int id = item->data(0, Qt::UserRole + 1).toInt();
-    this->lastClickedDevice = id;
+    this->lastClickedClientIndex = ui->device_tree->indexOfTopLevelItem(item);
     const auto f = [=](){
         std::filesystem::path reqPath = "Dplm.postman_collection.json";
         http::RequestForm reqForm = http::readRequest(reqPath, "ListEndpoints");
@@ -179,12 +182,12 @@ void Dplm::endpointClicked(QTreeWidgetItem* item, int column)
     Q_UNUSED(column);
     if (item->childCount() > 0)
         return;
-    int device_id = item->data(0, Qt::UserRole + 1).toInt();
+    int client_id = item->data(0, Qt::UserRole + 1).toInt();
     const auto f = [=](){
         std::filesystem::path reqPath = "Dplm.postman_collection.json";
         http::RequestForm reqForm = http::readRequest(reqPath, "GetDevice");
         http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
-        http::replace(reqForm.urlRaw, "$id", std::to_string(device_id));
+        http::replace(reqForm.urlRaw, "$id", std::to_string(client_id));
         reqForm.setHeader("Authorization", "Token " + this->authToken);
         reqForm.setHeader("Host", str(ui->hostName->text()));
         auto response = executeRequest(reqForm.urlRaw,

@@ -7,7 +7,6 @@ from matplotlib.animation import FuncAnimation, TimedAnimation
 from matplotlib.lines import Line2D
 import numpy as np, collections
 
-
 class RealTimePlotter(TimedAnimation):
     def __init__(self):
         self.addedData = []
@@ -43,6 +42,7 @@ class RealTimePlotter(TimedAnimation):
         return
 
 
+
     def _draw_frame(self, framedata):
         self.in_frame_data_gather_func()
         margin = 2
@@ -66,16 +66,14 @@ class RealTimePlotter(TimedAnimation):
 
 class MqttStreamPlotter:
 
-    def __init__(self, clientID, username, password):
+    def __init__(self, clientID):
         self.wlen = 5
         self.client = mqtt.Client(client_id=clientID)
-        self.client.username_pw_set(username=username, password=password)
+        self.client.username_pw_set(username='plotter', password='NqEnK7WegmSLIE66f2L7aedtgjAl352b')
         self.client.on_message = self.on_message
         self.rtplot = RealTimePlotter()
-
         def in_frame_action():
             self.client.loop()
-
         self.rtplot.in_frame_data_gather_func = in_frame_action
 
     def on_message(self, client, userdata, msg):
@@ -89,18 +87,17 @@ class MqttStreamPlotter:
         for v in median_data:
             self.rtplot.add_data(v)
 
-    def plot(self, topic, host, port):
+
+    def plot(self, topic, host, port=1883):
         port = int(port)
         self.client.connect(host, port)
         self.client.subscribe(topic)
         if self.client.is_connected():
+            print('No connection')
+            print(topic, host, port)
             return -1
         plt.show()
 
 
-def execute(username, password, clientID, topic, url, port):
-    def run(username, password, clientID, topic, url, port):
-        plotter = MqttStreamPlotter(clientID, username, password)
-        plotter.plot(topic, url, port)
-    Process(target=run, args=(username, password, clientID, topic, url, port)).run()
-
+plotter = MqttStreamPlotter(clientID='admin')
+plotter.plot('action/read/stream/ESP32', 'dff8we.stackhero-network.com')

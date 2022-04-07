@@ -24,9 +24,13 @@ class AclMosquittoView(generics.GenericAPIView, ValidateDataMixin):
 
     def post(self, request: Request, *args, **kwargs):
         acl_request = self.get_validated_data(request)
-        # Server can do anything on any topic
+
         if acl_request['clientid'] == config('DJANGO_MQTT_CLIENT_ID'):
-            return Response(status=status.HTTP_200_OK)
+            # Server client can do anything on any topic
+            if acl_request['username'] == config('DJANGO_MQTT_USERNAME'):
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response(status=status.HTTP_403_FORBIDDEN)
         if acl_request['topic'] == 'discovery/registration':
             return Response(status=status.HTTP_200_OK)
 
