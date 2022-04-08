@@ -48,17 +48,23 @@ private:
         connect(this, &WebClientInterface::webAuthSuccessS,
                 this, &WebClientInterface::webAuthSuccess,
                 Qt::QueuedConnection);
+
+        connect(uiPopup->registerUserBtn, &QPushButton::released,
+                this, &WebClientInterface::registrate);
+        connect(this, &WebClientInterface::webRegFailS,
+                this, &WebClientInterface::webRegFail,
+                Qt::QueuedConnection);
+        connect(this, &WebClientInterface::webRegSuccessS,
+                this, &WebClientInterface::webRegSuccess,
+                Qt::QueuedConnection);
     }
 
 Q_SIGNALS:
     // 'S' means method is used for async requests
     void webAuthFailS();
-    void webConnectFailS();
     void webAuthSuccessS();
-    void webCreationSuccessS(QString);
-    void webCreationAuthFailS();
-    void webCreationFailS(QString);
-    void webSuccesfulPreConnectionS();
+    void webRegFailS();
+    void webRegSuccessS();
 
     void accepted(std::string, std::string, std::string, std::string);
 
@@ -77,26 +83,6 @@ public:
     {
         uiPopup->authIcon->setIcon(QIcon());
         uiPopup->addressIcon->setIcon(QIcon());
-    }
-
-    void webAuthFail() Q_SLOT
-    {
-        uiPopup->authBtn->setEnabled(true);
-        uiPopup->authBtn->setFlat(false);
-        uiPopup->authIcon->setIcon(QIcon("./icons/fail.png"));
-        std::cout << "Auth failed\n";
-    }
-
-    void webAuthSuccess() Q_SLOT
-    {
-        uiPopup->authBtn->setEnabled(true);
-        uiPopup->authBtn->setFlat(false);
-        uiPopup->authIcon->setIcon(QIcon("./icons/success.png"));
-        uiPopup->addressIcon->setIcon(QIcon("./icons/success.png"));
-        userPass = uiPopup->password->text().toStdString();
-        uiPopup->creationStatus->setText("");
-        uiPopup->btnBox->addButton(hiddenServerAccessButton,
-            QDialogButtonBox::ButtonRole::AcceptRole);
     }
 
     void authenticate()
@@ -135,6 +121,74 @@ public:
             }
         };
         std::thread(f).detach();
+    }
+
+
+    void webAuthFail() Q_SLOT
+    {
+        uiPopup->authBtn->setEnabled(true);
+        uiPopup->authBtn->setFlat(false);
+        uiPopup->authIcon->setIcon(QIcon("./icons/fail.png"));
+        std::cout << "Auth failed\n";
+    }
+
+    void webAuthSuccess() Q_SLOT
+    {
+        uiPopup->authBtn->setEnabled(true);
+        uiPopup->authBtn->setFlat(false);
+        uiPopup->authIcon->setIcon(QIcon("./icons/success.png"));
+        uiPopup->addressIcon->setIcon(QIcon("./icons/success.png"));
+        userPass = uiPopup->password->text().toStdString();
+        uiPopup->creationStatus->setText("");
+        uiPopup->btnBox->addButton(hiddenServerAccessButton,
+            QDialogButtonBox::ButtonRole::AcceptRole);
+    }
+
+    void registrate()
+    {
+        if (uiPopup->registerUserBtn->isFlat())
+            return;
+        uiPopup->registerUserBtn->setEnabled(false);
+        uiPopup->registerUserBtn->setFlat(true);
+        this->webLoginEntered = uiPopup->newUsername->text().toStdString();
+        this->webPassEntered = uiPopup->newPassword->text().toStdString();
+        this->webIpEntered = uiPopup->ip->text().toStdString();
+        this->webPortEntered = uiPopup->port->text().toStdString();
+        const auto f = [=](){
+            std::filesystem::path reqPath = "Dplm.postman_collection.json";
+            http::RequestForm reqForm = http::readRequest(reqPath, "CreateUser");
+            std::string address = this->webIpEntered;
+            if (this->webPortEntered != ""){
+                address = address + ':' + this->webPortEntered;
+            }
+            http::replace(reqForm.urlRaw, "$address", address);
+            http::replace(reqForm.body, "$username", this->webLoginEntered);
+            http::replace(reqForm.body, "$password", this->webPassEntered);
+            http::replace(reqForm.body, "$re_password", this->webPassEntered);
+            reqForm.setHeader("Host", address);
+            auto response = executeRequest(reqForm.urlRaw,
+                                           reqForm.headers, reqForm.method,
+                                           reqForm.body);
+            if (response.responseCode == 200){
+                Q_EMIT webRegSuccessS();
+            } else {
+                Q_EMIT webRegFailS();
+            }
+        };
+        std::thread(f).detach();
+    }
+
+    void webRegSuccess(){
+        uiPopup->registerUserBtn->setEnabled(true);
+        uiPopup->registerUserBtn->setFlat(false);
+        userPass = uiPopup->newPassword->text().toStdString();
+        uiPopup->creationStatus->setText("");
+    }
+
+    void webRegFail(){
+        uiPopup->registerUserBtn->setEnabled(true);
+        uiPopup->registerUserBtn->setFlat(false);
+        uiPopup->creationStatus->setText("Registration failed");
     }
 
     void showClientWindow() Q_SLOT

@@ -118,8 +118,24 @@
 		{
 			"name": "CreateUser",
 			"request": {
-				"method": "GET",
-				"header": []
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"$username\",\r\n    \"password\": \"$password\",\r\n    \"re_password\":\"$re_password\"\r\n}"
+				},
+				"url": {
+					"raw": "http://$address/auth/users/",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"auth",
+						"users",
+						""
+					]
+				}
 			},
 			"response": []
 		},
