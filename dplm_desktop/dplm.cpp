@@ -1,4 +1,6 @@
 #include "./ui_dplm.h"
+#include "./ui_endpointForm.h"
+#include "./ui_writeForm.h"
 #include "dplm.h"
 
 #include "dplm.h"
@@ -19,7 +21,9 @@ Dplm::Dplm(
 {
     ui->setupUi(this);
     connect(ui->device_tree, &QTreeWidget::itemDoubleClicked,
-        this, &Dplm::itemClicked);
+        this, &Dplm::listEndpoints);
+    connect(this, &Dplm::listEndpointsS,
+            this, &Dplm::listEndpointRequest);
     connect(ui->endpoint_tree, &QTreeWidget::itemDoubleClicked,
         this, &Dplm::endpointClicked);
 
@@ -48,7 +52,6 @@ Dplm::Dplm(
         for(auto device_dict: body.array()){
             auto device = device_dict.toObject();
             QTreeWidgetItem* devitem = new QTreeWidgetItem();
-
             devitem->setText(0, device.find("clientID").value().toString());
             devitem->setText(1, device.find("local_address").value().toString());
             devitem->setText(2, device.find("last_update").value().toString());
@@ -60,12 +63,13 @@ Dplm::Dplm(
     });
     connect(this, &Dplm::gotEndpoints,
             this, [=](QJsonDocument body){
+        ui->endpoint_tree->clear();
         for(auto dict: body.array()){
-            ui->endpoint_tree->clear();
             auto endpoint = dict.toObject();
             QTreeWidgetItem* item = new QTreeWidgetItem();
-            item->setText(0, endpoint.find("name").value().toString());
-            item->setData(0, Qt::UserRole + 1, QVariant(this->lastClickedClientIndex));
+            QString endpointName = endpoint.find("name").value().toString();
+            item->setText(0, endpointName);
+            item->setData(0, Qt::UserRole + 1, QVariant(this->currentDeviceIndex));
             ui->endpoint_tree->addTopLevelItem(item);
         }
     });
@@ -85,19 +89,55 @@ std::string str(QString const& qstr){
 }
 
 void Dplm::endpointRightClicked(const QPoint& pos){
+    QMenu menu(this);
     QTreeWidget *tree = ui->endpoint_tree;
     QTreeWidgetItem *nd = tree->itemAt(pos);
-    this->clientIDForStream = ui->device_tree
-            ->topLevelItem(nd->data(0, Qt::UserRole + 1).toInt())
-            ->text(0).toStdString();
-    this->endpointForStream = nd->text(0).toStdString();
-    QAction *plotAct = new QAction("Plot stream", this);
-    plotAct->setStatusTip("Real time data plot");
-    connect(plotAct, &QAction::triggered,
-            this, &Dplm::callPlotProcedure);
-    QMenu menu(this);
-    menu.addAction(plotAct);
+
+    if (nd){
+        this->endpointAction = nd->text(0).toStdString();
+        this->inputFieldAction = nd->text(1).toStdString();
+        QAction *plotAct = new QAction("Plot stream", this);
+        plotAct->setStatusTip("Real time data plot");
+        connect(plotAct, &QAction::triggered,
+                this, &Dplm::callPlotProcedure);
+        QAction *writeAct = new QAction("Write to device", this);
+        connect(writeAct, &QAction::triggered,
+                this, &Dplm::writeEndpointProcedure);
+        menu.addAction(plotAct);
+        menu.addAction(writeAct);
+    } else { // new endpoint field
+        QAction *addEndpointAct = new QAction("Add endpoint", this);
+        connect(addEndpointAct, &QAction::triggered,
+                this, &Dplm::addEndpointToDevice);
+        menu.addAction(addEndpointAct);
+    }
     menu.exec( tree->mapToGlobal(pos) );
+}
+
+void Dplm::addEndpointToDevice(){
+    QDialog endpointForm;
+    Ui::EndpointForm uiform;
+    uiform.setupUi(&endpointForm);
+    connect(uiform.buttonBox, &QDialogButtonBox::accepted,
+            [=](){
+        std::filesystem::path reqPath = "Dplm.postman_collection.json";
+        http::RequestForm reqForm = http::readRequest(reqPath, "AddEndpoint");
+        http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
+        reqForm.setHeader("Authorization", "Token " + this->authToken);
+        reqForm.setHeader("Host", str(ui->hostName->text()));
+        http::replace(reqForm.body, "$name", uiform.name->text().toStdString());
+        http::replace(reqForm.body, "$io_type", uiform.iotype->text().toStdString());
+        http::replace(reqForm.body, "$data_type", uiform.datatype->text().toStdString());
+        http::replace(reqForm.body, "$device", std::to_string(this->currentDevicePk));
+        const auto f = [=](){
+            executeRequest(reqForm.urlRaw,
+                           reqForm.headers, reqForm.method, reqForm.body);
+            Q_EMIT this->listEndpointsS(this->currentDevicePk);
+        };
+        std::thread(f).detach();
+    });
+    endpointForm.exec();
+
 }
 
 void Dplm::callPlotProcedure(){
@@ -105,8 +145,8 @@ void Dplm::callPlotProcedure(){
     auto connection_vars = this->web.getAccessVariables();
     argString.append(connection_vars["username"] + ' ');
     argString.append(connection_vars["password"] + ' ');
-    argString.append(this->clientIDForStream + ' ');
-    argString.append(this->endpointForStream + ' ');
+    argString.append(this->currentClientID + ' ');
+    argString.append(this->endpointAction + ' ');
     // TODO: get it from server!
     argString.append(this->broker_url + ' ');
     argString.append(this->broker_port);
@@ -118,6 +158,43 @@ void Dplm::callPlotProcedure(){
                    argString);
     };
     std::thread(f).detach();
+}
+
+void Dplm::writeEndpointProcedure(){
+    QDialog writeForm(this);
+    Ui::WriteForm uiwrite;
+    uiwrite.setupUi(&writeForm);
+    writeForm.setWindowFlags(Qt::FramelessWindowHint | Qt::Popup);
+    connect(uiwrite.buttonBox, &QDialogButtonBox::accepted,
+            [=](){
+        std::filesystem::path reqPath = "Dplm.postman_collection.json";
+        http::RequestForm reqForm = http::readRequest(reqPath, "DeviceUpdate");
+        http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
+        reqForm.setHeader("Authorization", "Token " + this->authToken);
+        reqForm.setHeader("Host", str(ui->hostName->text()));
+        http::replace(reqForm.urlRaw,
+                      "$device_pk", std::to_string(this->currentDevicePk));
+        http::replace(reqForm.urlRaw,
+                      "$endpoint", this->endpointAction);
+        std::string str_payload;
+        if (uiwrite.writeLine->text() != ""){
+            try {
+                int payload = std::stoi(uiwrite.writeLine->text().toStdString());
+                str_payload += (unsigned char)payload;
+            } catch (const std::exception & e) {
+                str_payload = uiwrite.writeLine->text().toStdString();
+            }
+        } else { // no payload
+            return;
+        }
+        reqForm.body = str_payload;
+        const auto f = [=](){
+            executeRequest(reqForm.urlRaw,
+                           reqForm.headers, reqForm.method, reqForm.body);
+        };
+        std::thread(f).detach();
+    });
+    writeForm.exec();
 }
 
 void Dplm::loginClicked(){
@@ -151,18 +228,13 @@ void Dplm::setupTree()
 }
 
 
-void Dplm::itemClicked(QTreeWidgetItem* item, int column)
+void Dplm::listEndpointRequest(int pk)
 {
-    Q_UNUSED(column);
-    if (item->childCount() > 0)
-        return;
-    int id = item->data(0, Qt::UserRole + 1).toInt();
-    this->lastClickedClientIndex = ui->device_tree->indexOfTopLevelItem(item);
     const auto f = [=](){
         std::filesystem::path reqPath = "Dplm.postman_collection.json";
         http::RequestForm reqForm = http::readRequest(reqPath, "ListEndpoints");
         http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
-        http::replace(reqForm.urlRaw, "$client_id", std::to_string(id));
+        http::replace(reqForm.urlRaw, "$device_pk", std::to_string(pk));
         reqForm.setHeader("Authorization", "Token " + this->authToken);
         reqForm.setHeader("Host", str(ui->hostName->text()));
         auto response = executeRequest(reqForm.urlRaw,
@@ -176,18 +248,30 @@ void Dplm::itemClicked(QTreeWidgetItem* item, int column)
     std::thread(f).detach();
 }
 
+void Dplm::listEndpoints(QTreeWidgetItem* item, int column)
+{
+    Q_UNUSED(column);
+    if (item->childCount() > 0)
+        return;
+    int id = item->data(0, Qt::UserRole + 1).toInt();
+    this->currentDevicePk = id;
+    this->currentDeviceIndex = ui->device_tree->indexOfTopLevelItem(item);
+    this->currentClientID = item->text(0).toStdString();
+    listEndpointRequest(id);
+}
+
 
 void Dplm::endpointClicked(QTreeWidgetItem* item, int column)
 {
     Q_UNUSED(column);
     if (item->childCount() > 0)
         return;
-    int client_id = item->data(0, Qt::UserRole + 1).toInt();
+    int device_pk = item->data(0, Qt::UserRole + 1).toInt();
     const auto f = [=](){
         std::filesystem::path reqPath = "Dplm.postman_collection.json";
         http::RequestForm reqForm = http::readRequest(reqPath, "GetDevice");
         http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
-        http::replace(reqForm.urlRaw, "$id", std::to_string(client_id));
+        http::replace(reqForm.urlRaw, "$id", std::to_string(device_pk));
         reqForm.setHeader("Authorization", "Token " + this->authToken);
         reqForm.setHeader("Host", str(ui->hostName->text()));
         auto response = executeRequest(reqForm.urlRaw,
@@ -201,8 +285,10 @@ void Dplm::endpointClicked(QTreeWidgetItem* item, int column)
             http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
             reqForm.setHeader("Authorization", "Token " + this->authToken);
             reqForm.setHeader("Host", str(ui->hostName->text()));
-            http::replace(reqForm.body, "$clientID", str(clientID));
-            http::replace(reqForm.body, "$endpoint", str(item->text(0)));
+            http::replace(reqForm.urlRaw,
+                          "$device_pk", std::to_string(this->currentDevicePk));
+            http::replace(reqForm.urlRaw,
+                          "$endpoint", str(item->text(0)));
             executeRequest(reqForm.urlRaw,
                            reqForm.headers, reqForm.method,
                            reqForm.body);

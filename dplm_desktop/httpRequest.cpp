@@ -54,6 +54,15 @@ RequestResult executeRequest(const std::string &resourceAddress,
             return requestResult;
         }
         reply = res.value();
+    } else if (method == "PUT") {
+        auto res = req.Put(address.c_str(), header, body, "application/json");
+        if (res.error() != httplib::Error::Success) {
+            requestResult.resultString = httplib::to_string(res.error());
+            requestResult.responseCode = 0;
+            std::cout << requestResult.resultString << '\n' << resourceAddress <<'\n';
+            return requestResult;
+        }
+        reply = res.value();
     }
     if (reply.status == 200) {
         requestResult.responseCode = reply.status;

@@ -152,7 +152,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"clientID\":\"$clientID\",\r\n    \"endpoint\":\"$endpoint\"\r\n}",
+					"raw": "",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -160,7 +160,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://$address/devices/action/dev_read/",
+					"raw": "http://$address/devices/action/$device_pk/$endpoint/dev_read/",
 					"protocol": "http",
 					"host": [
 						"$address"
@@ -168,6 +168,8 @@
 					"path": [
 						"devices",
 						"action",
+						"$device_pk",
+						"$endpoint",
 						"dev_read",
 						""
 					]
@@ -188,7 +190,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"clientID\":\"$clientID\",\r\n    \"endpoint\":\"$endpoint\",\r\n    \"payload\":\"$payload\"\r\n}",
+					"raw": "",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -196,7 +198,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://$address/devices/action/dev_update/",
+					"raw": "http://$address/devices/action/$device_pk/$endpoint/dev_update/",
 					"protocol": "http",
 					"host": [
 						"$address"
@@ -204,6 +206,8 @@
 					"path": [
 						"devices",
 						"action",
+						"$device_pk",
+						"$endpoint",
 						"dev_update",
 						""
 					]
@@ -224,7 +228,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"clientID\":\"$clientID\",\r\n    \"endpoint\":\"$endpoint\",\r\n    \"payload\":\"$payload\"\r\n}",
+					"raw": "",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -232,7 +236,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://$address/devices/action/dev_update/",
+					"raw": "http://$address/devices/action/$device_pk/$endpoint/dev_update/",
 					"protocol": "http",
 					"host": [
 						"$address"
@@ -240,6 +244,8 @@
 					"path": [
 						"devices",
 						"action",
+						"$device_pk",
+						"$endpoint",
 						"dev_update",
 						""
 					]
@@ -259,7 +265,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://$address/devices/endpoints/$client_id",
+					"raw": "http://$address/devices/endpoints/$device_pk",
 					"protocol": "http",
 					"host": [
 						"$address"
@@ -267,7 +273,7 @@
 					"path": [
 						"devices",
 						"endpoints",
-						"$client_id"
+						"$device_pk"
 					]
 				}
 			},
