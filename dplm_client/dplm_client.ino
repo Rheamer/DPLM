@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <Array.h>
+#include <LCD_I2C.h>
 
 const String base_ssid = "";
 const String base_wifi_password = "";
@@ -9,6 +10,8 @@ String wifi_password = base_wifi_password;
 String clientID = "";
 String user = "";
 String password = "";
+
+LCD_I2C lcd(0x27, 16, 2);
 
 const int ONBOARD_LED = 2;
 const int ADC34 = 34;
@@ -68,7 +71,7 @@ int setup_wifi_timed(String const& _ssid, String const& _pass) {
 
 void callback(char* topic, byte* message, unsigned int length) {
   Serial.print("Message arrived on topic: ");
-  Serial.print(topic);
+  Serial.println(topic);
   String strtopic = String(topic);
   if (strtopic == "action/put/serial/" + clientID) {
     callback_serial(message, length);
@@ -78,6 +81,8 @@ void callback(char* topic, byte* message, unsigned int length) {
     callback_setNetwork(message, length);
   } else if (strtopic == "action/update/blink/" + clientID) {
     callback_blink(message, length);
+  } else if (strtopic == "action/update/lcd/" + clientID) {
+    callback_lcd(message, length);
   } else if (strtopic == "config/broker/" + clientID) {
     callback_broker(message, length);
   }
@@ -125,13 +130,30 @@ void callback_setNetwork(byte* msg, unsigned int length) {
 }
 
 void callback_blink(byte* msg, unsigned int length) {
-  Serial.print("Blinking");
-  for (int i = 0; i < 10; ++i) {
-    delay(50);
+  if (length > 1 || length == 0)
+    return;
+  Serial.print(msg[0]);
+  Serial.print(length);
+  int blink_count = int(msg[0]);
+  for (int i = 0; i < blink_count; ++i) {
+    delay(500);
     digitalWrite(ONBOARD_LED, HIGH);
-    delay(50);
+    delay(500);
     digitalWrite(ONBOARD_LED, LOW);
   }
+}
+
+void callback_lcd(byte* msg, unsigned int length) {
+  String line;
+  if (length > 50){
+    return;
+  }
+  for (int i = 0; i < length; i++){
+    line += (char)msg[i];
+  }
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(line);
 }
 
 void reconnect() {
@@ -146,6 +168,7 @@ void reconnect() {
       client.subscribe(("config/net/" + WiFi.localIP().toString() + ":" + ssid).c_str());
       client.subscribe(("config/broker/" + clientID).c_str());
       client.subscribe(("action/update/blink/" + clientID).c_str());
+      client.subscribe(("action/update/lcd/" + clientID).c_str());
       client.subscribe(("action/put/serial/" + clientID).c_str());
       client.subscribe("discovery/local");
       client.publish("discovery/registration",
@@ -191,7 +214,7 @@ void callback_broker(byte* msg, unsigned int length){
 
 int sensorRead = 0;
 const int readBufferSize = 200;
-Array<char, readBufferSize> sensorReadings;
+Array<unsigned char, readBufferSize> sensorReadings;
 int circularIndex = readBufferSize - 1; //will become 0 at start
 
 void loop() {
@@ -199,23 +222,21 @@ void loop() {
     reconnect();
   }
   sensorRead = analogRead(ADC34) + 1;
-  Serial.println(sensorRead);
+//  Serial.println(sensorRead);
   if (++circularIndex == readBufferSize) {
     circularIndex = 0;
-    //    sensorReading[readBufferSize - 1] = '\0';
-    client.publish(("action/read/sensor/" + clientID).c_str(),
+    client.publish(("action/stream/phres" + String("/") + clientID ).c_str(),
                    sensorReadings.data(), readBufferSize);
-    //    for(int i = 0; i < readBufferSize;i++)
-    //      Serial.print(sensorReadings[i]);
   }
-  sensorReadings[circularIndex] = (char)sensorRead;
+  sensorReadings[circularIndex] = (unsigned char)sensorRead;
   client.loop();
 
 }
 
 void setup() {
   Serial.begin(115200);
-
+    lcd.begin(); 
+    lcd.backlight();
   setup_wifi(ssid, wifi_password);
   client.setServer(mqtt_server.c_str(), mqtt_port);
   client.setCallback(callback);
