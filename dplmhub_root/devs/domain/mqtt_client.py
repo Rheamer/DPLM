@@ -78,14 +78,15 @@ class MqttClient:
             config("DJANGO_MQTT_USERNAME"),
             config("DJANGO_MQTT_PASSWORD"))
 
+        self._client.on_connect = self.__on_connect
+        self._client.on_message = self.__on_message
+        self._client.on_disconnect = self.__on_disconnect
+
         print("Trying to connect to: " + mqtt_server_address)
         while not self._client.is_connected():
             self._client.connect(mqtt_server_address, broker_port_unsafe, 60)
             self._client.loop()
 
-        self._client.on_connect = self.__on_connect
-        self._client.on_message = self.__on_message
-        self._client.on_disconnect = self.__on_disconnect
         self.__setup_callbacks()
         self._client.loop_start()
 
@@ -114,11 +115,11 @@ class MqttClient:
             self.parsarg([ssid, password]))
 
     """ Action methods """
-    def dev_update(self, endpoint, deviceID, payload=""):
-        self._client.publish(f'action/update/{endpoint}/{deviceID}', payload)
+    def dev_update(self, endpoint, clientID, payload: bytes):
+        self._client.publish(f'action/update/{endpoint}/{clientID}', payload)
 
-    def dev_put(self, endpoint, deviceID, payload=""):
-        self._client.publish(f'action/put/{endpoint}/{deviceID}', payload)
+    def dev_put(self, endpoint, clientID, payload: bytes):
+        self._client.publish(f'action/put/{endpoint}/{clientID}', payload)
 
     def dev_read(self, endpoint, clientID):
         # Publish request to get a singular response with a value

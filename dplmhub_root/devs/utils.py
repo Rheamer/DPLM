@@ -19,6 +19,7 @@ def custom_exception_handler(exc, context):
 class DeviceException(APIException):
     pass
 
+
 class FilterableSerializer(serializers.Serializer):
 
     @abstractmethod
@@ -29,20 +30,24 @@ class FilterableSerializer(serializers.Serializer):
 def action_on_object_validated(filtered_model):
     def inner(action_func):
         @functools.wraps(action_func)
-        def wrapper(self, request: Request):
-            serializer: FilterableSerializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+        def wrapper(self, request: Request, *args, **kwargs):
             devices = filtered_model.objects\
-                .filter(clientID=serializer.get_filter_field())
+                .filter(id=kwargs['device_pk'])
             if devices.count() == 0:
-                raise exceptions.NotFound(
-                    detail="No device with provided ID")
-            data = action_func(
+                raise exceptions.APIException(
+                    detail="No device found")
+            payload = bytes(request.stream.read())
+            data = {
+                'payload': payload,
+                'clientID': devices.first().clientID,
+                'endpoint': kwargs['endpoint']
+            }
+            response_data = action_func(
                 self,
-                serializer.validated_data)
+                data)
             if data is None:
                 return Response(status=status.HTTP_200_OK)
             else:
-                return Response(status=status.HTTP_200_OK, data=data)
+                return Response(status=status.HTTP_200_OK, data=response_data)
         return wrapper
     return inner

@@ -44,7 +44,7 @@ class DeviceReadLog(models.Model):
     device = models.ForeignKey(Device,
                                related_name='readings',
                                on_delete=models.CASCADE)
-    data = models.CharField(max_length=16384)
+    data = models.BinaryField(max_length=16384)
     endpoint = models.CharField(max_length=100)
     read_time = models.DateTimeField(auto_now=True)
 

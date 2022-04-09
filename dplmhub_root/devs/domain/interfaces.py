@@ -51,7 +51,7 @@ class MqttGatewayFactory(GatewayFactory):
             'local_address': attributes[2],
         }
         serializer = DeviceSerializer(data=data)
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid():
             serializer.save()
 
     @staticmethod
@@ -60,6 +60,7 @@ class MqttGatewayFactory(GatewayFactory):
             'value': msg.payload,
             'endpoint': endpoint}
         )
+        # TODO serialize read log not action
         if serializer.is_valid():
             obj = serializer.instance
             query = Device.objects.filter(clientID=deviceID)

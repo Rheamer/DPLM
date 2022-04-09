@@ -23,6 +23,7 @@ class NetworkSwitchSerializer(serializers.Serializer):
 
 
 class DeviceActionSerializer(FilterableSerializer):
+    """ DEPRECATED """
     clientID = serializers.CharField()
     payload = serializers.CharField(allow_blank=True, default=None)
     endpoint = serializers.CharField()

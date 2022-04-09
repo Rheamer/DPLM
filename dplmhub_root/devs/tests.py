@@ -7,10 +7,6 @@ from rest_framework import status
 
 from django.urls import reverse
 from django.contrib.auth.models import User
-# import dplmhub_root.devs.models as models
-# from .serializers import *
-# from .models import *
-# from .views import *
 from devs import serializers as serials
 from devs import models
 from devs import views

@@ -39,8 +39,7 @@ class DeviceApiView(generics.RetrieveAPIView):
                 return dev.devices.all()
 
 
-
-class EndpointApiView(generics.ListCreateAPIView):
+class EndpointApiView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = EndpointSerializer
 
@@ -50,9 +49,14 @@ class EndpointApiView(generics.ListCreateAPIView):
         for user in user_query:
             devmas_query = user.device_masters.all()
             for dev in devmas_query:
-                devices = dev.devices.filter(id=int(self.kwargs['client_id']))
+                devices = dev.devices.filter(id=int(self.kwargs['device_pk']))
                 for device in devices:
                     return device.endpoints.all()
+
+
+class EndpointCreateApiView(generics.CreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = EndpointSerializer
 
 
 class DeviceNetApiView(generics.GenericAPIView):
@@ -78,26 +82,25 @@ class DeviceNetApiView(generics.GenericAPIView):
                     validated_data['wifi_ssid'], validated_data['wifi_pass'])
                 # we need to send it once, and for every device value will be changed
             return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_NOT_FOUND)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class DeviceActionView(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DeviceActionSerializer
     response_serializer = DeviceReadLogSerializer
     queryset = User.objects.all()
 
     def get_queryset(self):
         return self.queryset.filter(id=self.request.user.id)
 
-    def get_client_reading(self, clientID: str):
+    def get_client_reading(self, clientID: str, endpoint):
         user = self.get_queryset()[0]
         dev_master = user.device_masters.all().first()
         device = dev_master.devices.filter(clientID=clientID).first()
         return device.readings.latest('read_time')
 
-    def get_serializer(self, *args, **kwargs) -> FilterableSerializer:
-        return self.serializer_class(*args, **kwargs)
+    def _get_serializer(self, *args, **kwargs):
+        return self.response_serializer(*args, **kwargs)
 
     @action(["post"], detail=False)
     @action_on_object_validated(Device)
@@ -110,8 +113,7 @@ class DeviceActionView(viewsets.GenericViewSet):
         readings = self.get_client_reading(data['clientID'])
         if readings is not None:
             serializer = self.\
-                response_serializer(readings,
-                                    many=False)
+                _get_serializer(readings, many=False)
             return serializer.data
 
     @action(["post"], detail=False)
