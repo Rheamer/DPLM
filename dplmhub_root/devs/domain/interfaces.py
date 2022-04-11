@@ -1,4 +1,4 @@
-from devs.serializers import DeviceSerializer, DeviceActionSerializer
+from devs.serializers import DeviceSerializer, DeviceReadLogSerializer
 from devs.models import Device
 from .mqtt_client import MqttClient
 from abc import ABC, abstractmethod
@@ -56,16 +56,14 @@ class MqttGatewayFactory(GatewayFactory):
 
     @staticmethod
     def callback_read(client, userdata, msg, deviceID, endpoint):
-        serializer = DeviceActionSerializer(data={
-            'value': msg.payload,
-            'endpoint': endpoint}
-        )
+        serializer = DeviceReadLogSerializer(data = {
+            "device": deviceID,
+            "data": msg.payload,
+            "endpoint": endpoint,
+        })
         # TODO serialize read log not action
         if serializer.is_valid():
-            obj = serializer.instance
-            query = Device.objects.filter(clientID=deviceID)
-            obj.device = query.get(0).id
-            obj.save()
+            serializer.save()
 
     # TODO: define callbacks
     @staticmethod

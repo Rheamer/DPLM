@@ -97,7 +97,7 @@ class DeviceActionView(viewsets.GenericViewSet):
         user = self.get_queryset()[0]
         dev_master = user.device_masters.all().first()
         device = dev_master.devices.filter(clientID=clientID).first()
-        return device.readings.latest('read_time')
+        return device.readings.filter(endpoint=endpoint).latest('read_time')
 
     def _get_serializer(self, *args, **kwargs):
         return self.response_serializer(*args, **kwargs)
@@ -106,11 +106,11 @@ class DeviceActionView(viewsets.GenericViewSet):
     @action_on_object_validated(Device)
     def dev_read(self, data):
         """ Returns last received reading, published request for a new one """
+        readings = self.get_client_reading(data['clientID'], data['endpoint'])
         get_mqttgate_factory()\
             .get_instance()\
             .dev_read(data['endpoint'],
                       data['clientID'])
-        readings = self.get_client_reading(data['clientID'])
         if readings is not None:
             serializer = self.\
                 _get_serializer(readings, many=False)
