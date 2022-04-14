@@ -11,6 +11,7 @@ from devs import serializers as serials
 from devs import models
 from devs import views
 from userAuth import models as userModels
+import base64
 
 
 class TestDeviceView(APITestCase):
@@ -74,7 +75,7 @@ class TestDeviceView(APITestCase):
         serializer = serials.DeviceSerializer(device, many=False)
         object = models.Device.objects.filter(id=device.id)
         q_serializer = serials.DeviceSerializer(object[0], many=False)
-        assert serializer.data == q_serializer.data
+        self.assertEqual(serializer.data, q_serializer.data)
 
     
 class TestGridAPI(APITestCase):
@@ -123,32 +124,38 @@ class TestDeviceActionAPI(APITestCase):
     def test_no_device_action(self):
         # No device is supposed to be found
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
-        serializer = serials.DeviceActionSerializer(
-            data={'endpoint': 'test_endpoint',
-                  'clientID': 'test_clientID',
-                  'payload': 'test'}
+
+        request = self.factory.post(
+            reverse(
+                'action-dev-put',
+                args=(0, 'test_endpoint',)
+            )
         )
-        serializer.is_valid(raise_exception=True)
-        request = self.factory.post(reverse('action-dev-put'), data=serializer.data)
         force_authenticate(request, user=user)
-        resp = self.view.as_view({'post': 'dev_put'})(request)
+        resp = self.view.as_view({'post': 'dev_put'})(request,
+                                                      device_pk=0,
+                                                      endpoint='test_endpoint')
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_action(self):
         # Wrapper test
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
         master = userModels.DeviceMaster.objects.create(user=user)
-        models.Device.objects.create(user=master, clientID='test_clientID')
-        serializer = serials.DeviceActionSerializer(
-            data={'endpoint': 'test_endpoint',
-                  'clientID': 'test_clientID',
-                  'payload': 'test'}
+        device = models.Device.objects.create(user=master, clientID='test_clientID')
+        request = self.factory.post(
+            reverse(
+                'action-dev-put',
+                args=(device.id, 'test_endpoint',)
+            ),
+            data=b'test',
+            content_type="text/plain"
         )
-        serializer.is_valid(raise_exception=True)
-        request = self.factory.post(reverse('action-dev-put'), data=serializer.data)
         force_authenticate(request, user=user)
-        resp = self.view.as_view({'post': 'dev_put'})(request)
+        resp = self.view.as_view({'post': 'dev_put'})(request,
+                                                      device_pk=device.id,
+                                                      endpoint='test_endpoint')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
 
     def test_action_read(self):
         # Wrapper test
@@ -157,22 +164,23 @@ class TestDeviceActionAPI(APITestCase):
         device = models.Device.objects.create(user=master, clientID='test_clientID')
         readlog = models.DeviceReadLog\
             .objects.create(device=device,
-                            data='7d2d2d',
+                            data=b'testest',
                             endpoint='test_endpoint')
         actual_data = serials.DeviceReadLogSerializer(readlog, many=False).data
-        action_data = {'endpoint': 'test_endpoint',
-                       'clientID': 'test_clientID'}
-        serializer = serials.DeviceActionSerializer(data=action_data)
-        serializer.is_valid(raise_exception=True)
-        request = self.factory.post(reverse('action-dev-read'),
-                                    data=action_data)
+        request = self.factory.post(
+            reverse(
+                'action-dev-read',
+                args=(device.id, 'test_endpoint',)
+            ),
+        )
         force_authenticate(request, user=user)
-        resp = self.view.as_view({'post': 'dev_read'})(request)
-        print(request)
-        print(resp)
+        resp = self.view.as_view({'post': 'dev_read'})(request,
+                                                       device_pk=device.id,
+                                                       endpoint='test_endpoint')
         self.assertIsNotNone(resp.data)
-        self.assertEqual(resp.data['data'], actual_data['data'])
-        self.assertEqual(resp.data['endpoint'], actual_data['endpoint'])
+        self.assertEqual(
+            bytes(resp.data, 'utf-8'),
+            actual_data['data'])
 
 
     # TODO: other action tests
