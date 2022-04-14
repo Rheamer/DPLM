@@ -112,9 +112,7 @@ class DeviceActionView(viewsets.GenericViewSet):
             .dev_read(data['endpoint'],
                       data['clientID'])
         if readings is not None:
-            serializer = self.\
-                _get_serializer(readings, many=False)
-            return serializer.data
+            return readings.data
 
     @action(["post"], detail=False)
     @action_on_object_validated(Device)

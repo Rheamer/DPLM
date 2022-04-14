@@ -34,9 +34,11 @@ def action_on_object_validated(filtered_model):
             devices = filtered_model.objects\
                 .filter(id=kwargs['device_pk'])
             if devices.count() == 0:
-                raise exceptions.APIException(
+                raise exceptions.NotFound(
                     detail="No device found")
-            payload = bytes(request.stream.read())
+            payload = ""
+            if request.stream is not None:
+                payload = bytes(request.stream.read())
             data = {
                 'payload': payload,
                 'clientID': devices.first().clientID,

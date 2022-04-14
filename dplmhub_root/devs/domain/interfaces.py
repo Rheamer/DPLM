@@ -56,7 +56,7 @@ class MqttGatewayFactory(GatewayFactory):
 
     @staticmethod
     def callback_read(client, userdata, msg, deviceID, endpoint):
-        serializer = DeviceReadLogSerializer(data = {
+        serializer = DeviceReadLogSerializer(data={
             "device": deviceID,
             "data": msg.payload,
             "endpoint": endpoint,
