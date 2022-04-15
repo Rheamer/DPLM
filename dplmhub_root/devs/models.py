@@ -40,21 +40,30 @@ class Device(models.Model):
         return self.clientID
 
 
-class DeviceReadLog(models.Model):
-    device = models.ForeignKey(Device,
-                               related_name='readings',
-                               on_delete=models.CASCADE)
-    data = models.BinaryField(max_length=16384)
-    endpoint = models.CharField(max_length=100)
-    read_time = models.DateTimeField(auto_now=True)
-
-
 class Endpoint(models.Model):
     device = models.ForeignKey(
         Device,
         related_name='endpoints',
         on_delete=models.CASCADE
     )
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100,
+                            db_index=True)
     io_type = models.CharField(max_length=30)
     data_type = models.CharField(max_length=30)
+
+
+class DeviceReadLog(models.Model):
+    device = models.ForeignKey(Device,
+                               related_name='readings',
+                               on_delete=models.PROTECT)
+    data = models.BinaryField(max_length=16384)
+    """ 
+    Endpoint can be deleted at any point. 
+    Device fk is needed to avoid dangling readings 
+    """
+    endpoint = models.ForeignKey(Endpoint,
+                                 related_name='readings',
+                                 on_delete=models.SET_NULL,
+                                 blank=True,
+                                 null=True)
+    read_time = models.DateTimeField(auto_now=True)
