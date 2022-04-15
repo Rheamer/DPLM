@@ -142,6 +142,12 @@ class TestDeviceActionAPI(APITestCase):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
         master = userModels.DeviceMaster.objects.create(user=user)
         device = models.Device.objects.create(user=master, clientID='test_clientID')
+        endpoint = models.Endpoint.objects.create(
+            device=device,
+            name='test_endpoint',
+            io_type='0',
+            data_type='0'
+        )
         request = self.factory.post(
             reverse(
                 'action-dev-put',
@@ -162,11 +168,16 @@ class TestDeviceActionAPI(APITestCase):
         user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
         master = userModels.DeviceMaster.objects.create(user=user)
         device = models.Device.objects.create(user=master, clientID='test_clientID')
-        readlog = models.DeviceReadLog\
+        endpoint = models.Endpoint.objects.create(
+            device=device,
+            name='test_endpoint',
+            io_type='0',
+            data_type='0'
+        )
+        readlog = models.DeviceReadLog \
             .objects.create(device=device,
-                            data=b'testest',
-                            endpoint='test_endpoint')
-        actual_data = serials.DeviceReadLogSerializer(readlog, many=False).data
+                            data=bytes('testest', 'utf-8'),
+                            endpoint=endpoint)
         request = self.factory.post(
             reverse(
                 'action-dev-read',
@@ -179,8 +190,8 @@ class TestDeviceActionAPI(APITestCase):
                                                        endpoint='test_endpoint')
         self.assertIsNotNone(resp.data)
         self.assertEqual(
-            bytes(resp.data, 'utf-8'),
-            actual_data['data'])
+            resp.data,
+            readlog.data)
 
 
     # TODO: other action tests

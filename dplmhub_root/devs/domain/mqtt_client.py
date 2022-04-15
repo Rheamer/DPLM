@@ -125,7 +125,7 @@ class MqttClient:
         # Publish request to get a singular response with a value
 
         def callback_read_close(*args, **kwargs):
-            self.callbacks['read'](*args, deviceID=clientID, endpoint=endpoint)
+            self.callbacks['read'](*args, clientID=clientID, endpoint=endpoint)
             self._remove_callback(
                 f'action/read/{endpoint}/{clientID}')
 

@@ -6,10 +6,12 @@ from rest_framework import status
 from rest_framework import permissions
 from django.contrib.auth.models import User
 from .serializers import *
+from .models import Device, Endpoint
 from .domain.interfaces import get_mqttgate_factory
 from decouple import config
-from .utils import action_on_object_validated, FilterableSerializer
 import json
+import functools
+from rest_framework import exceptions
 
 class DeviceListApiView(generics.ListCreateAPIView):
     # add permission to check if user is authenticated
@@ -85,6 +87,35 @@ class DeviceNetApiView(generics.GenericAPIView):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 
+def action_on_object_validated():
+    def inner(action_func):
+        @functools.wraps(action_func)
+        def wrapper(self, request: Request, *args, **kwargs):
+            devices = Device.objects\
+                .filter(id=kwargs['device_pk'])
+            endpoint = Endpoint.objects.filter(name=kwargs['endpoint'])
+            if devices.count() == 0 or endpoint.count() == 0:
+                raise exceptions.NotFound(
+                    detail="No device or endpoint found")
+            payload = ""
+            if request.stream is not None:
+                payload = bytes(request.stream.read())
+            data = {
+                'payload': payload,
+                'clientID': devices.first().clientID,
+                'endpoint': endpoint.first().name
+            }
+            response_data = action_func(
+                self,
+                data)
+            if data is None:
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response(status=status.HTTP_200_OK, data=response_data)
+        return wrapper
+    return inner
+
+
 class DeviceActionView(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     response_serializer = DeviceReadLogSerializer
@@ -93,17 +124,18 @@ class DeviceActionView(viewsets.GenericViewSet):
     def get_queryset(self):
         return self.queryset.filter(id=self.request.user.id)
 
-    def get_client_reading(self, clientID: str, endpoint):
+    def get_client_reading(self, clientID: str, endpoint: str):
         user = self.get_queryset()[0]
         dev_master = user.device_masters.all().first()
         device = dev_master.devices.filter(clientID=clientID).first()
-        return device.readings.filter(endpoint=endpoint).latest('read_time')
+        endpoint_instance = Endpoint.objects.filter(name=endpoint, device=device.id).first()
+        return device.readings.filter(endpoint=endpoint_instance.id).latest('read_time')
 
     def _get_serializer(self, *args, **kwargs):
         return self.response_serializer(*args, **kwargs)
 
     @action(["post"], detail=False)
-    @action_on_object_validated(Device)
+    @action_on_object_validated()
     def dev_read(self, data):
         """ Returns last received reading, published request for a new one """
         readings = self.get_client_reading(data['clientID'], data['endpoint'])
@@ -115,7 +147,7 @@ class DeviceActionView(viewsets.GenericViewSet):
             return readings.data
 
     @action(["post"], detail=False)
-    @action_on_object_validated(Device)
+    @action_on_object_validated()
     def dev_put(self, data):
         get_mqttgate_factory()\
             .get_instance()\
@@ -124,7 +156,7 @@ class DeviceActionView(viewsets.GenericViewSet):
                      data['payload'])
 
     @action(["put"], detail=False)
-    @action_on_object_validated(Device)
+    @action_on_object_validated()
     def dev_update(self, data):
         get_mqttgate_factory()\
             .get_instance()\
