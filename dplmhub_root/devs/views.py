@@ -125,7 +125,7 @@ class DeviceActionView(viewsets.GenericViewSet):
         return self.queryset.filter(id=self.request.user.id)
 
     def get_client_reading(self, clientID: str, endpoint: str):
-        user = self.get_queryset()[0]
+        user = self.get_queryset().first()
         dev_master = user.device_masters.all().first()
         device = dev_master.devices.filter(clientID=clientID).first()
         endpoint_instance = Endpoint.objects.filter(name=endpoint, device=device.id).first()
@@ -144,7 +144,7 @@ class DeviceActionView(viewsets.GenericViewSet):
             .dev_read(data['endpoint'],
                       data['clientID'])
         if readings is not None:
-            return readings.data
+            return readings.bin_data
 
     @action(["post"], detail=False)
     @action_on_object_validated()

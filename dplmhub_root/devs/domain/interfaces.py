@@ -1,10 +1,11 @@
 from devs.serializers import DeviceSerializer, DeviceReadLogSerializer
-from devs.models import Device, DeviceReadLog
+from devs.models import Device, DeviceReadLog, Endpoint
 from .mqtt_client import MqttClient
 from abc import ABC, abstractmethod
 from userAuth.models import DeviceMaster
 from django.contrib.auth.models import User
-from rest_framework import exceptions
+from rest_framework import exceptions as api_exc
+
 
 # interface for gateway client instance, to switch out mqtt and coap for example
 # TODO: create gateway client interface, gateway's factory get_instance should
@@ -59,16 +60,17 @@ class MqttGatewayFactory(GatewayFactory):
     def callback_read(client, userdata, msg, clientID, endpoint: str):
         byte_data = msg.payload
         device = Device.objects.filter(clientID=clientID).first()
+        endpoint_instance = Endpoint.objects.filter(name=endpoint, device=device.id).first()
         serializer = DeviceReadLogSerializer(data={
             "device": device.id,
             "data": byte_data,
-            "endpoint": endpoint,
+            "endpoint": endpoint_instance.id,
         })
         if serializer.is_valid():
             DeviceReadLog.objects.create(
                 device=device,
                 data=byte_data,
-                endpoint=endpoint
+                endpoint=endpoint_instance
             )
 
     @staticmethod

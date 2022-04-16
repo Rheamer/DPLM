@@ -56,7 +56,7 @@ class DeviceReadLog(models.Model):
     device = models.ForeignKey(Device,
                                related_name='readings',
                                on_delete=models.PROTECT)
-    data = models.BinaryField(max_length=16384)
+    bin_data = models.BinaryField(max_length=16384)
     """ 
     Endpoint can be deleted at any point. 
     Device fk is needed to avoid dangling readings 

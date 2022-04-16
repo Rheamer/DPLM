@@ -176,7 +176,7 @@ class TestDeviceActionAPI(APITestCase):
         )
         readlog = models.DeviceReadLog \
             .objects.create(device=device,
-                            data=bytes('testest', 'utf-8'),
+                            bin_data=bytes('testest', 'utf-8'),
                             endpoint=endpoint)
         request = self.factory.post(
             reverse(
@@ -191,7 +191,7 @@ class TestDeviceActionAPI(APITestCase):
         self.assertIsNotNone(resp.data)
         self.assertEqual(
             resp.data,
-            readlog.data)
+            readlog.bin_data)
 
 
     # TODO: other action tests
