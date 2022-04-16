@@ -61,6 +61,9 @@ class MqttGatewayFactory(GatewayFactory):
         byte_data = msg.payload
         device = Device.objects.filter(clientID=clientID).first()
         endpoint_instance = Endpoint.objects.filter(name=endpoint, device=device.id).first()
+        if device is None or endpoint_instance is None:
+            print('Mqtt callback not found device or instance')
+            return
         serializer = DeviceReadLogSerializer(data={
             "device": device.id,
             "data": byte_data,

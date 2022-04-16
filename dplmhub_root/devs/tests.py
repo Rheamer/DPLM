@@ -162,6 +162,27 @@ class TestDeviceActionAPI(APITestCase):
                                                       endpoint='test_endpoint')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
+    def test_readlog_read_from_db(self):
+        # Wrapper test
+        user = User.objects.create_user('Test1', 'Test@gmail.com', 'TestPass')
+        master = userModels.DeviceMaster.objects.create(user=user)
+        device = models.Device.objects.create(user=master, clientID='test_clientID')
+        endpoint = models.Endpoint.objects.create(
+            device=device,
+            name='test_endpoint',
+            io_type='0',
+            data_type='0'
+        )
+        readlog = models.DeviceReadLog \
+            .objects.create(device=device,
+                            bin_data=bytes('testest', 'utf-8'),
+                            endpoint=endpoint)
+        q_readlog = models.DeviceReadLog.objects.filter(
+            device=device.id,
+            endpoint=endpoint.id
+        ).first()
+        self.assertEqual(bytes(q_readlog.bin_data), bytes('testest', 'utf-8'))
+
 
     def test_action_read(self):
         # Wrapper test
@@ -178,6 +199,7 @@ class TestDeviceActionAPI(APITestCase):
             .objects.create(device=device,
                             bin_data=bytes('testest', 'utf-8'),
                             endpoint=endpoint)
+
         request = self.factory.post(
             reverse(
                 'action-dev-read',

@@ -108,7 +108,7 @@ def action_on_object_validated():
             response_data = action_func(
                 self,
                 data)
-            if data is None:
+            if response_data is None:
                 return Response(status=status.HTTP_200_OK)
             else:
                 return Response(status=status.HTTP_200_OK, data=response_data)
@@ -144,7 +144,7 @@ class DeviceActionView(viewsets.GenericViewSet):
             .dev_read(data['endpoint'],
                       data['clientID'])
         if readings is not None:
-            return readings.bin_data
+            return bytes(readings.bin_data)
 
     @action(["post"], detail=False)
     @action_on_object_validated()

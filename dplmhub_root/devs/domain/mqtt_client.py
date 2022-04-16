@@ -129,10 +129,11 @@ class MqttClient:
             self._remove_callback(
                 f'action/read/{endpoint}/{clientID}')
 
+        self._client.publish(f'action/read/{endpoint}/{clientID}')
         self._add_callback(
             f'action/read/{endpoint}/{clientID}',
             callback_read_close)
-        self._client.publish(f'action/read/{endpoint}/{clientID}')
+
 
     def connect_stream(
         self,
