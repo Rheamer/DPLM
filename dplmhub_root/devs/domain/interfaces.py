@@ -57,12 +57,14 @@ class MqttGatewayFactory(GatewayFactory):
             serializer.save()
 
     @staticmethod
-    def callback_read(client, userdata, msg, clientID, endpoint: str):
+    def callback_read(client, userdata, msg, clientID: str, endpoint: str):
         byte_data = msg.payload
         device = Device.objects.filter(clientID=clientID).first()
-        endpoint_instance = Endpoint.objects.filter(name=endpoint, device=device.id).first()
+        endpoint_instance = Endpoint.objects.filter(
+            name=endpoint, device=device.id
+        ).first()
         if device is None or endpoint_instance is None:
-            print('Mqtt callback not found device or instance')
+            print('Mqtt callback not found device or instance, can\'t save read')
             return
         serializer = DeviceReadLogSerializer(data={
             "device": device.id,
