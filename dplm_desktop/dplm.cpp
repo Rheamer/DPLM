@@ -54,6 +54,7 @@ Dplm::Dplm(
             this, &Dplm::listDevices);
     connect(this, &Dplm::gotListing,
             this, [=](QJsonDocument body){
+        ui->device_tree->clear();
         std::cout << body.toJson().toStdString();
         for(auto grid_dict: body.array()){
             auto grid = grid_dict.toObject();
