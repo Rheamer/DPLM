@@ -312,6 +312,70 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "ListGrids",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "default"
+					},
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://$address/devices/grids",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"grids"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "SwitchNetwork",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "default"
+					},
+					{
+						"key": "Authorization",
+						"value": "Token $token",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"old_wifi_ssid\": \"$old_wifi_ssid\",\r\n    \"wifi_ssid\": \"$wifi_ssid\",\r\n    \"wifi_pass\":\"$wifi_pass\"\r\n}"
+				},
+				"url": {
+					"raw": "http://$address/devices/network",
+					"protocol": "http",
+					"host": [
+						"$address"
+					],
+					"path": [
+						"devices",
+						"network"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }

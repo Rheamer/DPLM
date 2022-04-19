@@ -3,7 +3,6 @@ from .models import Device, Grid, DeviceReadLog, Endpoint
 from .utils import FilterableSerializer
 
 
-
 class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
@@ -11,6 +10,7 @@ class DeviceSerializer(serializers.ModelSerializer):
 
 
 class GridSerializer(serializers.ModelSerializer):
+    devices = DeviceSerializer(read_only=True, many=True)
     class Meta:
         model = Grid
         fields = '__all__'

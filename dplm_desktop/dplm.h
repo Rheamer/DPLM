@@ -37,9 +37,10 @@ private:
     std::string endpointAction;
     std::string inputFieldAction;
     std::string currentClientID;
-    int currentDeviceIndex = 0;
+    std::string currentSwitchWifiSsid;
     int currentDevicePk = 0;
     PyUtils py;
+    void callSwitchNetworkProcedure();
 Q_SIGNALS:
     void closing();
     void listEndpointsS(int clientID);
@@ -56,6 +57,7 @@ private Q_SLOTS:
     void writeEndpointProcedure();
     void addEndpointToDevice();
     void listEndpointRequest(int clientID);
+    void deviceRightClicked(const QPoint &pos);
 };
 
 #endif // USBCONNECTIONS_H

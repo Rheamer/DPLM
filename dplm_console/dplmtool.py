@@ -28,6 +28,7 @@ def get_token(url, user, password) -> str:
         url = url, 
         method = 'POST', 
         data = payload)
+    print(response.status_code)
     return response.json()['auth_token']
 
 
