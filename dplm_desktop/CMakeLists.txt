@@ -40,7 +40,7 @@ find_package(OpenSSL 1.1 REQUIRED)
 set(PROJECT_SOURCES
     python_utilities.h
     dplm.h dplm.cpp
-    dplm.ui login.ui endpointForm.ui writeForm.ui
+    dplm.ui login.ui endpointForm.ui writeForm.ui switchNetworkForm.ui
     httpRequest.hpp httpRequest.cpp
     main.cpp
     web_client.hpp

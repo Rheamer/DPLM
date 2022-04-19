@@ -1,6 +1,7 @@
 #include "./ui_dplm.h"
 #include "./ui_endpointForm.h"
 #include "./ui_writeForm.h"
+#include "./ui_switchNetworkForm.h"
 #include "dplm.h"
 
 #include "dplm.h"
@@ -30,6 +31,9 @@ Dplm::Dplm(
     ui->endpoint_tree->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->endpoint_tree, &QTreeWidget::customContextMenuRequested,
         this, &Dplm::endpointRightClicked);
+    ui->device_tree->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->device_tree, &QTreeWidget::customContextMenuRequested,
+        this, &Dplm::deviceRightClicked);
     connect(ui->login_button, &QPushButton::released,
         this, &Dplm::loginClicked);
 
@@ -46,19 +50,26 @@ Dplm::Dplm(
             ui->login_state->setText(username.c_str());
             setupTree();
         });
+    connect(ui->listDevicesButton, &QPushButton::released,
+            this, &Dplm::listDevices);
     connect(this, &Dplm::gotListing,
             this, [=](QJsonDocument body){
         std::cout << body.toJson().toStdString();
-        for(auto device_dict: body.array()){
-            auto device = device_dict.toObject();
-            QTreeWidgetItem* devitem = new QTreeWidgetItem();
-            devitem->setText(0, device.find("clientID").value().toString());
-            devitem->setText(1, device.find("local_address").value().toString());
-            devitem->setText(2, device.find("last_update").value().toString());
-            devitem->setText(3, device.find("wifi_ssid").value().toString());
-
-            ui->device_tree->addTopLevelItem(devitem);
-            devitem->setData(0, Qt::UserRole + 1, QVariant(device_dict.toObject().find("id").value().toInt()));
+        for(auto grid_dict: body.array()){
+            auto grid = grid_dict.toObject();
+            QTreeWidgetItem* griditem = new QTreeWidgetItem();
+            griditem->setText(0, grid.find("wifi_ssid").value().toString());
+            for (auto device_dict: grid.find("devices")->toArray()){
+                auto device = device_dict.toObject();
+                QTreeWidgetItem* devitem = new QTreeWidgetItem();
+                devitem->setText(1, device.find("clientID").value().toString());
+                devitem->setText(2, device.find("local_address").value().toString());
+                devitem->setText(3, device.find("last_update").value().toString());
+                devitem->setText(4, device.find("wifi_ssid").value().toString());
+                devitem->setData(0, Qt::UserRole + 1, QVariant(device_dict.toObject().find("id").value().toInt()));
+                griditem->addChild(devitem);
+            }
+            ui->device_tree->addTopLevelItem(griditem);
         }
     });
     connect(this, &Dplm::gotEndpoints,
@@ -69,7 +80,6 @@ Dplm::Dplm(
             QTreeWidgetItem* item = new QTreeWidgetItem();
             QString endpointName = endpoint.find("name").value().toString();
             item->setText(0, endpointName);
-            item->setData(0, Qt::UserRole + 1, QVariant(this->currentDeviceIndex));
             ui->endpoint_tree->addTopLevelItem(item);
         }
     });
@@ -86,6 +96,48 @@ Dplm::~Dplm()
 
 std::string str(QString const& qstr){
     return qstr.toStdString();
+}
+
+void Dplm::deviceRightClicked(const QPoint& pos){
+    QMenu menu(this);
+    QTreeWidget *tree = ui->device_tree;
+    QTreeWidgetItem *nd = tree->itemAt(pos);
+    if (nd){
+        this->currentSwitchWifiSsid = nd->text(0).toStdString();
+        QAction *networkAct = new QAction("Switch network", this);
+        connect(networkAct, &QAction::triggered,
+                this, &Dplm::callSwitchNetworkProcedure);
+        menu.addAction(networkAct);
+    }
+    menu.exec( tree->mapToGlobal(pos) );
+}
+
+void Dplm::callSwitchNetworkProcedure(){
+    QDialog switchNetworkForm;
+    Ui::SwitchNetworkForm uiform;
+    uiform.setupUi(&switchNetworkForm);
+    connect(uiform.buttonBox, &QDialogButtonBox::accepted,
+            [=](){
+        std::filesystem::path reqPath = "Dplm.postman_collection.json";
+        http::RequestForm reqForm = http::readRequest(reqPath, "SwitchNetwork");
+        http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
+        reqForm.setHeader("Authorization", "Token " + this->authToken);
+        reqForm.setHeader("Host", str(ui->hostName->text()));
+        http::replace(reqForm.body, "$old_wifi_ssid", this->currentSwitchWifiSsid);
+        http::replace(reqForm.body, "$wifi_ssid", uiform.wifiSsid->text().toStdString());
+        http::replace(reqForm.body, "$wifi_pass", uiform.wifiPass->text().toStdString());
+        const auto f = [=](){
+            auto response = executeRequest(reqForm.urlRaw,
+                                           reqForm.headers, reqForm.method);
+            if (response.responseCode == 200){
+                QJsonDocument body;
+                body = QJsonDocument::fromJson(response.resultString.c_str());
+                Q_EMIT this->gotListing(body);
+            }
+        };
+        std::thread(f).detach();
+    });
+   switchNetworkForm.exec();
 }
 
 void Dplm::endpointRightClicked(const QPoint& pos){
@@ -204,7 +256,7 @@ void Dplm::loginClicked(){
 void Dplm::listDevices(){
     const auto f = [=](){
         std::filesystem::path reqPath = "Dplm.postman_collection.json";
-        http::RequestForm reqForm = http::readRequest(reqPath, "ListDevices");
+        http::RequestForm reqForm = http::readRequest(reqPath, "ListGrids");
         http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
         reqForm.setHeader("Authorization", "Token " + this->authToken);
         reqForm.setHeader("Host", str(ui->hostName->text()));
@@ -255,8 +307,7 @@ void Dplm::listEndpoints(QTreeWidgetItem* item, int column)
         return;
     int id = item->data(0, Qt::UserRole + 1).toInt();
     this->currentDevicePk = id;
-    this->currentDeviceIndex = ui->device_tree->indexOfTopLevelItem(item);
-    this->currentClientID = item->text(0).toStdString();
+    this->currentClientID = item->text(2).toStdString();
     listEndpointRequest(id);
 }
 
@@ -266,12 +317,12 @@ void Dplm::endpointClicked(QTreeWidgetItem* item, int column)
     Q_UNUSED(column);
     if (item->childCount() > 0)
         return;
-    int device_pk = item->data(0, Qt::UserRole + 1).toInt();
+
     const auto f = [=](){
         std::filesystem::path reqPath = "Dplm.postman_collection.json";
         http::RequestForm reqForm = http::readRequest(reqPath, "GetDevice");
         http::replace(reqForm.urlRaw, "$address", str(ui->hostName->text()));
-        http::replace(reqForm.urlRaw, "$id", std::to_string(device_pk));
+        http::replace(reqForm.urlRaw, "$id", std::to_string(currentDevicePk));
         reqForm.setHeader("Authorization", "Token " + this->authToken);
         reqForm.setHeader("Host", str(ui->hostName->text()));
         auto response = executeRequest(reqForm.urlRaw,
