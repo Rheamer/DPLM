@@ -1,5 +1,6 @@
-from devs.serializers import DeviceSerializer, DeviceReadLogSerializer
-from devs.models import Device, DeviceReadLog, Endpoint
+from devs.serializers import DeviceSerializer, DeviceReadLogSerializer, GridSerializer
+from devs.models import Device, DeviceReadLog, Endpoint, Grid
+from rest_framework import serializers
 from .mqtt_client import MqttClient
 from abc import ABC, abstractmethod
 from userAuth.models import DeviceMaster
@@ -43,18 +44,50 @@ class MqttGatewayFactory(GatewayFactory):
     @staticmethod
     def callback_registration(client, user_data, msg):
         print("MQTT endpoint received: " + msg.topic)
-        # remember dev [clientID, user, local_address, last_update_date]
+        # remember dev [clientID, user, local_address, broker_address, wifi_ssid]
         attributes = msg.payload.decode('utf-8').split(':')
-        device_master = User.objects.filter(username=attributes[1]).first()\
-            .device_masters.all().first()
+        user = User.objects.filter(username=attributes[1]).first()
+        if user is None:
+            return
+        device_master = user.device_masters.all().first()
         data = {
             'clientID': attributes[0],
             'user': device_master.id,
-            'local_address': attributes[2],
+            'local_address': attributes[2]
         }
+        wifi_ssid = attributes[4]
+        grids = device_master.grids.filter(wifi_ssid=wifi_ssid)
+        grid = None
+        if grids.count() > 0:
+            grid = grids.first()
+        else:
+            grid_ser = GridSerializer(data={
+                'user': device_master.id,
+                'broker_address': attributes[3],
+                'wifi_ssid': wifi_ssid
+            })
+            try:
+                grid_ser.is_valid(raise_exception=True)
+                grid = grid_ser.save()
+            except serializers.ValidationError as e:
+                print(f'Failed creating grid {e.detail}')
+        if grid is None:
+            print('Registration: not found grid')
+            return
         serializer = DeviceSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
+        try:
+            serializer.is_valid(raise_exception=True)
+            device = serializer.save()
+        except serializers.ValidationError as e:
+            device = device_master.devices.filter(
+                clientID=serializer.data['clientID']).first()
+        if device is None:
+            print('Registration: not found device')
+            return
+        device.grid = grid
+        device.save(force_update=True)
+
+
 
     @staticmethod
     def callback_read(client, userdata, msg, clientID: str, endpoint: str):
@@ -84,12 +117,26 @@ class MqttGatewayFactory(GatewayFactory):
             clientID, new_ssid, old_ssid
             ):
         device = Device.objects.filter(clientID=clientID).first()
+        device_master = DeviceMaster.objects.filter(id=device.user.id).first()
+        old_grid = device_master.grids.filter(old_ssid).first()
+        new_grid = device_master.grids.filter(new_ssid).first()
         if device is not None:
             if msg.payload == '1':
-                device.wifi_ssid = new_ssid
+                if new_grid is None:
+                    grid_ser = GridSerializer(data={
+                        'user': device_master.id,
+                        'broker_address': old_grid.broker_address,
+                        'wifi_ssid': device.wifi_ssid
+                    })
+                    if grid_ser.is_valid():
+                        new_grid = grid_ser.save()
+                device.grid = new_grid
+                if old_grid is not new_grid:
+                    if old_grid.devices.all().count() == 0:
+                        old_grid.delete()
             elif msg.payload == '0':
-                device.wifi_ssid = old_ssid
-            device.save()
+                device.grid = old_grid
+            device.save(force_update=True)
 
     @staticmethod
     def callback_deviceAAD(client, userdata, msg):

@@ -10,12 +10,14 @@ class Grid(models.Model):
         DeviceMaster,
         related_name='grids',
         on_delete=models.PROTECT)
-    broker_name = models.CharField(max_length=100, default="Default Broker")
     broker_address = models.CharField(max_length=40, default="", blank=True)
-    wifi_ssid = models.CharField(max_length=100, default='DPLM_BaseNetwork')
-
+    wifi_ssid = models.CharField(
+        max_length=100,
+        blank=True,
+        default=None,
+        db_index=True)
     def __str__(self):
-        return self.broker_name
+        return self.wifi_ssid
 
 
 class Device(models.Model):
@@ -27,11 +29,9 @@ class Device(models.Model):
     clientID = models.CharField(max_length=100, unique=True, db_index=True)
     local_address = models.CharField(max_length=40, default='127.0.0.1')
     last_update = models.DateTimeField(auto_now=True)
-    wifi_ssid = models.CharField(max_length=100, default='DPLM_BaseNetwork')
-    can_read = models.BooleanField(default=False)
     grid = models.ForeignKey(
         Grid,
-        related_name='device',
+        related_name='devices',
         on_delete=models.PROTECT,
         null=True,
         blank=True)
