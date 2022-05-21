@@ -129,7 +129,10 @@ class DeviceActionView(viewsets.GenericViewSet):
         dev_master = user.device_masters.all().first()
         device = dev_master.devices.filter(clientID=clientID).first()
         endpoint_instance = Endpoint.objects.filter(name=endpoint, device=device.id).first()
-        return device.readings.filter(endpoint=endpoint_instance.id).latest('read_time')
+        readings_query = device.readings.filter(endpoint=endpoint_instance.id)
+        if readings_query:
+            return readings_query.latest('read_time')
+        return None
 
     def _get_serializer(self, *args, **kwargs):
         return self.response_serializer(*args, **kwargs)
@@ -163,6 +166,12 @@ class DeviceActionView(viewsets.GenericViewSet):
             .dev_update(data['endpoint'],
                         data['clientID'],
                         data['payload'])
+
+
+class ReadLogListView(generics.ListAPIView):
+    serializer_class = DeviceReadLogSerializer
+    permission_classes = [permissions.AllowAny]
+    queryset = DeviceReadLog.objects.all()
 
 
 class GridListView(generics.ListCreateAPIView):

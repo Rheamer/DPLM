@@ -101,13 +101,13 @@ class MqttGatewayFactory(GatewayFactory):
             return
         serializer = DeviceReadLogSerializer(data={
             "device": device.id,
-            "data": byte_data,
+            "bin_data": byte_data,
             "endpoint": endpoint_instance.id,
         })
         if serializer.is_valid():
             DeviceReadLog.objects.create(
                 device=device,
-                data=byte_data,
+                bin_data=byte_data,
                 endpoint=endpoint_instance
             )
 
