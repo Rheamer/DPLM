@@ -46,7 +46,7 @@ Q_SIGNALS:
     void listEndpointsS(int clientID);
     void gotListing(QJsonDocument body);
     void gotEndpoints(QJsonDocument body);
-    void gotDeviceRead(QTreeWidgetItem* item, std::string resultString);
+    void gotDeviceRead(QTreeWidgetItem* item, QString resultString);
 
 private Q_SLOTS:
     void endpointClicked(QTreeWidgetItem *item, int column);

@@ -85,8 +85,10 @@ Dplm::Dplm(
         }
     });
     connect(this, &Dplm::gotDeviceRead,
-            this, [=](QTreeWidgetItem* item, std::string resString){
-            item->setText(1, resString.c_str());
+            this, [=](QTreeWidgetItem* item, QString resString){
+        item->setText(1, resString);
+        if (resString.size()==0)
+            item->setText(1, "-");
     });
 }
 
@@ -308,7 +310,7 @@ void Dplm::listEndpoints(QTreeWidgetItem* item, int column)
         return;
     int id = item->data(0, Qt::UserRole + 1).toInt();
     this->currentDevicePk = id;
-    this->currentClientID = item->text(2).toStdString();
+    this->currentClientID = item->text(1).toStdString();
     listEndpointRequest(id);
 }
 
@@ -348,7 +350,7 @@ void Dplm::endpointClicked(QTreeWidgetItem* item, int column)
                                            reqForm.headers, reqForm.method,
                                            reqForm.body);
             if (response.responseCode == 200){
-                Q_EMIT this->gotDeviceRead(item, response.resultString);
+                Q_EMIT this->gotDeviceRead(item, QString(response.resultString.c_str()));
             }
 
         }
