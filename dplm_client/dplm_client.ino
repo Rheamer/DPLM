@@ -85,7 +85,15 @@ void callback(char* topic, byte* message, unsigned int length) {
     callback_lcd(message, length);
   } else if (strtopic == "config/broker/" + clientID) {
     callback_broker(message, length);
+  } else if (strtopic == "action/getread/phres/" + clientID) {
+    callback_read_phres(message, length);
   }
+}
+
+void callback_read_phres(byte* message, unsigned int length) {
+   String sread = String(analogRead(ADC34));
+   client.publish(("action/read/phres" + String("/") + clientID ).c_str(),
+                   sread.c_str(), sread.length());
 }
 
 void callback_serial(byte* message, unsigned int length) {
@@ -170,12 +178,14 @@ void reconnect() {
       client.subscribe(("action/update/blink/" + clientID).c_str());
       client.subscribe(("action/update/lcd/" + clientID).c_str());
       client.subscribe(("action/put/serial/" + clientID).c_str());
+      client.subscribe(("action/getread/phres/" + clientID).c_str());
       client.subscribe("discovery/local");
       client.publish("discovery/registration",
                      (clientID + 
                      ":" + user + 
                      ":" + WiFi.localIP().toString() + 
-                     ":" + mqtt_server).c_str());
+                     ":" + mqtt_server +
+                     ":" + ssid).c_str());
       client.publish("discovery/local", clientID.c_str());
       
     } else {
@@ -193,6 +203,7 @@ void reconnect() {
     }
   }
 }
+
 
 void callback_broker(byte* msg, unsigned int length){
   // msg = ["broker_adress", "broker_port"]
