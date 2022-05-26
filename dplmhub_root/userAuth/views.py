@@ -9,6 +9,7 @@ from rest_framework import generics
 from rest_framework import exceptions
 from .utils import is_valid_topic
 from decouple import config
+import os
 
 class ValidateDataMixin:
     def get_validated_data(self, request: Request, *args, **kwargs):
@@ -25,9 +26,9 @@ class AclMosquittoView(generics.GenericAPIView, ValidateDataMixin):
     def post(self, request: Request, *args, **kwargs):
         acl_request = self.get_validated_data(request)
 
-        if acl_request['clientid'] == config('DJANGO_MQTT_CLIENT_ID'):
+        if acl_request['clientid'] == os.environ.get('DJANGO_MQTT_CLIENT_ID'):
             # Server client can do anything on any topic
-            if acl_request['username'] == config('DJANGO_MQTT_USERNAME'):
+            if acl_request['username'] == os.environ.get('DJANGO_MQTT_USERNAME'):
                 return Response(status=status.HTTP_200_OK)
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)

@@ -2,10 +2,11 @@ import functools
 from typing import List
 import paho.mqtt.client as mqtt
 from decouple import config
+import os
 
-mqtt_server_address = config("URL_BROKER_NETWORK")
-broker_port_unsafe = int(config("BROKER_PORT_UNSAFE"))
-broker_port_tls = int(config("BROKER_PORT_TLS"))
+mqtt_server_address = os.environ.get("URL_BROKER_NETWORK")
+broker_port_unsafe = int(os.environ.get("BROKER_PORT_UNSAFE"))
+broker_port_tls = int(os.environ.get("BROKER_PORT_TLS"))
 
 
 # TODO: inherit from gateway interface
@@ -71,12 +72,12 @@ class MqttClient:
 
     """ Public methods """
     def connect(self):
-        self._client = mqtt.Client(client_id=config("DJANGO_MQTT_CLIENT_ID"))
+        self._client = mqtt.Client(client_id=os.environ.get("DJANGO_MQTT_CLIENT_ID"))
         self._client.enable_logger()
 
         self._client.username_pw_set(
-            config("DJANGO_MQTT_USERNAME"),
-            config("DJANGO_MQTT_PASSWORD"))
+            os.environ.get("DJANGO_MQTT_USERNAME"),
+            os.environ.get("DJANGO_MQTT_PASSWORD"))
 
         self._client.on_connect = self.__on_connect
         self._client.on_message = self.__on_message
